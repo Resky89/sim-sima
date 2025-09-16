@@ -17,10 +17,24 @@ const SIM = () => {
       ),
     },
     {
+      key: "full_name",
+      title: "Nama Lengkap",
+      render: (value) => <div className="text-gray-900">{value}</div>,
+    },
+    {
+      key: "nik",
+      title: "NIK",
+      render: (value) => (
+        <div className="font-mono text-sm text-gray-600">{value}</div>
+      ),
+    },
+    {
       key: "jenis_sim",
       title: "Jenis SIM",
       render: (value) => {
-        const jenisSim = SIM_ENUMS.JENIS_SIM.find(item => item.value === value);
+        const jenisSim = SIM_ENUMS.JENIS_SIM.find(
+          (item) => item.value === value
+        );
         return (
           <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
             {jenisSim ? jenisSim.label : value}
@@ -72,6 +86,22 @@ const SIM = () => {
       icon: "🚗",
     },
     {
+      name: "full_name",
+      label: "Nama Lengkap",
+      type: "text",
+      required: true,
+      placeholder: "Nama lengkap sesuai KTP",
+      icon: "👤",
+    },
+    {
+      name: "nik",
+      label: "NIK",
+      type: "text",
+      required: true,
+      placeholder: "16 digit angka NIK",
+      icon: "🆔",
+    },
+    {
       name: "jenis_sim",
       label: "Jenis SIM",
       type: "select",
@@ -94,22 +124,112 @@ const SIM = () => {
       icon: "⏰",
     },
     {
-      name: "ktp_id",
-      label: "Data KTP Terkait",
+      name: "jenis_kelamin",
+      label: "Jenis Kelamin",
       type: "select",
       required: true,
-      options: [], // Will be populated dynamically
-      placeholder: "Pilih data KTP",
-      icon: "🆔",
+      options: SIM_ENUMS.JENIS_KELAMIN,
+      icon: "👤",
+    },
+    {
+      name: "gol_darah",
+      label: "Golongan Darah",
+      type: "select",
+      required: true,
+      options: SIM_ENUMS.GOLONGAN_DARAH,
+      icon: "🩸",
+    },
+    {
+      name: "tempat_lahir",
+      label: "Tempat Lahir",
+      type: "text",
+      required: true,
+      placeholder: "Kota kelahiran",
+      icon: "🏙️",
+    },
+    {
+      name: "tanggal_lahir",
+      label: "Tanggal Lahir",
+      type: "date",
+      required: true,
+      icon: "📅",
+    },
+    {
+      name: "pekerjaan",
+      label: "Pekerjaan",
+      type: "text",
+      required: true,
+      placeholder: "Profesi/pekerjaan",
+      icon: "💼",
+    },
+    {
+      name: "rt",
+      label: "RT",
+      type: "text",
+      required: true,
+      placeholder: "Nomor RT",
+      icon: "🏘️",
+    },
+    {
+      name: "rw",
+      label: "RW",
+      type: "text",
+      required: true,
+      placeholder: "Nomor RW",
+      icon: "🏘️",
+    },
+    {
+      name: "kecamatan",
+      label: "Kecamatan",
+      type: "text",
+      required: true,
+      placeholder: "Nama kecamatan",
+      icon: "🏙️",
+    },
+    {
+      name: "kabupaten",
+      label: "Kabupaten/Kota",
+      type: "text",
+      required: true,
+      placeholder: "Nama kabupaten/kota",
+      icon: "🏙️",
+    },
+    {
+      name: "provinsi",
+      label: "Provinsi",
+      type: "text",
+      required: true,
+      placeholder: "Nama provinsi",
+      icon: "🏙️",
+    },
+    {
+      name: "picture_path",
+      label: "Foto SIM",
+      type: "text",
+      required: true,
+      placeholder: "Path foto SIM",
+      icon: "📷",
     },
   ];
 
   const initialFormData = {
     nomor_sim: "",
+    full_name: "",
+    nik: "",
     jenis_sim: "",
     tanggal_terbit: "",
     tanggal_expired: "",
-    ktp_id: "",
+    jenis_kelamin: "",
+    gol_darah: "",
+    tempat_lahir: "",
+    tanggal_lahir: "",
+    pekerjaan: "",
+    rt: "",
+    rw: "",
+    kecamatan: "",
+    kabupaten: "",
+    provinsi: "",
+    picture_path: "",
   };
 
   const validationRules = {
@@ -118,6 +238,17 @@ const SIM = () => {
       label: "Nomor SIM",
       pattern: /^[0-9]{16}$/,
       patternMessage: "Nomor SIM harus 16 digit angka",
+    },
+    full_name: {
+      required: true,
+      label: "Nama Lengkap",
+      maxLength: 255,
+    },
+    nik: {
+      required: true,
+      label: "NIK",
+      pattern: /^[0-9]{16}$/,
+      patternMessage: "NIK harus 16 digit angka",
     },
     jenis_sim: {
       required: true,
@@ -141,9 +272,56 @@ const SIM = () => {
         return null;
       },
     },
-    ktp_id: {
+    jenis_kelamin: {
       required: true,
-      label: "Data KTP",
+      label: "Jenis Kelamin",
+    },
+    gol_darah: {
+      required: true,
+      label: "Golongan Darah",
+    },
+    tempat_lahir: {
+      required: true,
+      label: "Tempat Lahir",
+      maxLength: 100,
+    },
+    tanggal_lahir: {
+      required: true,
+      label: "Tanggal Lahir",
+    },
+    pekerjaan: {
+      required: true,
+      label: "Pekerjaan",
+      maxLength: 100,
+    },
+    rt: {
+      required: true,
+      label: "RT",
+      maxLength: 10,
+    },
+    rw: {
+      required: true,
+      label: "RW",
+      maxLength: 10,
+    },
+    kecamatan: {
+      required: true,
+      label: "Kecamatan",
+      maxLength: 100,
+    },
+    kabupaten: {
+      required: true,
+      label: "Kabupaten/Kota",
+      maxLength: 100,
+    },
+    provinsi: {
+      required: true,
+      label: "Provinsi",
+      maxLength: 100,
+    },
+    picture_path: {
+      required: true,
+      label: "Foto SIM",
     },
   };
 
@@ -153,6 +331,12 @@ const SIM = () => {
       label: "Jenis SIM",
       placeholder: "Filter Jenis SIM",
       options: SIM_ENUMS.JENIS_SIM,
+    },
+    {
+      key: "jenis_kelamin",
+      label: "Jenis Kelamin",
+      placeholder: "Filter Jenis Kelamin",
+      options: SIM_ENUMS.JENIS_KELAMIN,
     },
   ];
 
@@ -165,7 +349,7 @@ const SIM = () => {
       formFields={formFields}
       initialFormData={initialFormData}
       validationRules={validationRules}
-      searchPlaceholder="Cari nomor SIM atau jenis SIM..."
+      searchPlaceholder="Cari nomor SIM, nama, atau NIK..."
       filterOptions={filterOptions}
       icon="🚗"
     />

@@ -72,7 +72,7 @@ const Dashboard = () => {
               Selamat {getCurrentTime()}, {user?.full_name || "User"}! 👋
             </h1>
             <p className="text-blue-100">
-              Selamat datang kembali di Sistem Informasi Manajemen SIMA
+              Selamat datang kembali di Sistem Informasi Manusia SIMA
             </p>
           </div>
           <div className="hidden md:block">

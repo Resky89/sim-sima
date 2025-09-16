@@ -41,7 +41,7 @@ const navigation = [
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -66,7 +66,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         className={`
         fixed inset-y-0 left-0 z-50 w-80 bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-300 ease-in-out border-r-0
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0 lg:static lg:inset-0 lg:h-screen lg:flex-shrink-0 flex flex-col
+        lg:translate-x-0 lg:fixed lg:inset-y-0 lg:left-0 lg:h-screen lg:flex-shrink-0 flex flex-col
       `}
       >
         {/* Header */}
@@ -83,7 +83,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 SIMA
               </h1>
               <p className="text-xs text-gray-500 font-medium">
-                Sistem Informasi Manajemen
+                Sistem Informasi Manusia
               </p>
             </div>
           </div>
@@ -107,34 +107,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* User Info */}
-        <div className="px-6 py-5 border-b border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-blue-50/30">
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                {user?.full_name?.charAt(0).toUpperCase() || "U"}
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 truncate">
-                {user?.full_name || "User"}
-              </p>
-              <p className="text-xs text-gray-500 truncate font-medium">
-                {user?.email || "user@example.com"}
-              </p>
-              <div className="flex items-center mt-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-                <span className="text-xs text-green-600 font-medium">
-                  Online
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Navigation Divider */}
+        <div className="h-2 bg-gradient-to-r from-gray-50/50 to-blue-50/30"></div>
 
         {/* Navigation */}
-        <nav className="mt-6 px-4 space-y-2 flex-1 overflow-y-auto">
+        <nav className="mt-4 px-4 space-y-3 flex-1 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -142,10 +119,10 @@ const Sidebar = ({ isOpen, onClose }) => {
                 key={item.name}
                 to={item.href}
                 className={`
-                  group flex items-center px-4 py-3 text-sm font-medium rounded-2xl transition-all duration-300 transform hover:scale-[1.02]
+                  group flex items-center px-5 py-3.5 text-sm font-medium rounded-2xl transition-all duration-300 transform hover:scale-[1.02]
                   ${
                     isActive
-                      ? `bg-gradient-to-r ${item.color} text-white shadow-lg shadow-blue-500/25 scale-[1.02]`
+                      ? `bg-gradient-to-r ${item.color} text-white shadow-lg shadow-${item.color.split('-')[1]}/25 scale-[1.02]`
                       : "text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50/30 hover:text-gray-900"
                   }
                 `}
@@ -153,7 +130,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               >
                 <div
                   className={`
-                  flex items-center justify-center w-10 h-10 rounded-xl mr-3 transition-all duration-300
+                  flex items-center justify-center w-10 h-10 rounded-xl mr-4 transition-all duration-300
                   ${
                     isActive
                       ? "bg-white/20 backdrop-blur-sm shadow-inner"
@@ -187,10 +164,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-red-50/30">
+        <div className="p-5 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-red-50/30">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-4 py-4 text-sm font-semibold text-red-600 rounded-2xl hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 transition-all duration-300 group transform hover:scale-[1.02]"
+            className="w-full flex items-center px-5 py-4 text-sm font-semibold text-red-600 rounded-2xl hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 transition-all duration-300 group transform hover:scale-[1.02]"
           >
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-100 mr-4 group-hover:bg-red-200 transition-all duration-300 group-hover:shadow-md">
               <span className="text-xl">🚪</span>

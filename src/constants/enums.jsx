@@ -1,11 +1,13 @@
 // Enumerasi untuk SIM
 export const SIM_ENUMS = {
   JENIS_SIM: [
-    { value: "A", label: "SIM A" },
-    { value: "B1", label: "SIM B1" },
-    { value: "B2", label: "SIM B2" },
-    { value: "C", label: "SIM C" },
-    { value: "D", label: "SIM D" }
+    { value: "a", label: "SIM A" },
+    { value: "b1", label: "SIM B1" },
+    { value: "b2", label: "SIM B2" },
+    { value: "c", label: "SIM C" },
+    { value: "c1", label: "SIM C1" },
+    { value: "c2", label: "SIM C2" },
+    { value: "d", label: "SIM D" }
   ],
   STATUS: [
     { value: "AKTIF", label: "Aktif" },

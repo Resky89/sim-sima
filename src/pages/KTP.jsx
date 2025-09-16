@@ -1,8 +1,27 @@
-import CRUDManager from "../components/common/CRUDManager";
+import { useState, useEffect } from "react";
 import { ktpService } from "../services/ktpService";
 import { KTP_ENUMS } from "../constants/enums.jsx";
+import DataTable from "../components/ui/DataTable";
+import SearchFilter from "../components/ui/SearchFilter";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 const KTP = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total_items: 0,
+    total_pages: 0,
+  });
+  const [searchParams, setSearchParams] = useState({
+    search: "",
+    sort_by: "created_at",
+    sort_order: "desc",
+  });
+  const [filters, setFilters] = useState({});
+
   const columns = [
     {
       key: "nik",
@@ -60,152 +79,6 @@ const KTP = () => {
     },
   ];
 
-  const formFields = [
-    {
-      name: "nik",
-      label: "NIK",
-      type: "text",
-      required: true,
-      placeholder: "16 digit angka",
-      icon: "🆔",
-    },
-    {
-      name: "tempat_lahir",
-      label: "Tempat Lahir",
-      type: "text",
-      required: true,
-      placeholder: "Kota kelahiran",
-      icon: "🏙️",
-    },
-    {
-      name: "tanggal_lahir",
-      label: "Tanggal Lahir",
-      type: "date",
-      required: true,
-      icon: "📅",
-    },
-    {
-      name: "jenis_kelamin",
-      label: "Jenis Kelamin",
-      type: "select",
-      required: true,
-      options: KTP_ENUMS.JENIS_KELAMIN,
-      icon: "👤",
-    },
-    {
-      name: "agama",
-      label: "Agama",
-      type: "select",
-      required: true,
-      options: KTP_ENUMS.AGAMA,
-      icon: "🕌",
-    },
-    {
-      name: "status_perkawinan",
-      label: "Status Perkawinan",
-      type: "select",
-      required: true,
-      options: KTP_ENUMS.STATUS_PERKAWINAN,
-      icon: "💍",
-    },
-    {
-      name: "gol_darah",
-      label: "Golongan Darah",
-      type: "select",
-      required: true,
-      options: KTP_ENUMS.GOLONGAN_DARAH,
-      icon: "🩸",
-    },
-    {
-      name: "pekerjaan",
-      label: "Pekerjaan",
-      type: "text",
-      required: true,
-      placeholder: "Profesi/pekerjaan",
-      icon: "💼",
-    },
-    {
-      name: "kewarganegaraan",
-      label: "Kewarganegaraan",
-      type: "text",
-      required: true,
-      placeholder: "Contoh: WNI",
-      icon: "🇮🇩",
-    },
-    {
-      name: "alamat",
-      label: "Alamat",
-      type: "textarea",
-      required: true,
-      placeholder: "Alamat lengkap sesuai KTP",
-      rows: 3,
-      fullWidth: true,
-      icon: "🏠",
-    },
-  ];
-
-  const initialFormData = {
-    nik: "",
-    alamat: "",
-    tempat_lahir: "",
-    tanggal_lahir: "",
-    jenis_kelamin: "",
-    agama: "",
-    status_perkawinan: "",
-    gol_darah: "",
-    pekerjaan: "",
-    kewarganegaraan: "",
-  };
-
-  const validationRules = {
-    nik: {
-      required: true,
-      label: "NIK",
-      pattern: /^[0-9]{16}$/,
-      patternMessage: "NIK harus 16 digit angka",
-    },
-    alamat: {
-      required: true,
-      label: "Alamat",
-      maxLength: 1000,
-    },
-    tempat_lahir: {
-      required: true,
-      label: "Tempat Lahir",
-      maxLength: 100,
-    },
-    tanggal_lahir: {
-      required: true,
-      label: "Tanggal Lahir",
-    },
-    jenis_kelamin: {
-      required: true,
-      label: "Jenis Kelamin",
-    },
-    agama: {
-      required: true,
-      label: "Agama",
-    },
-    status_perkawinan: {
-      required: true,
-      label: "Status Perkawinan",
-    },
-    gol_darah: {
-      required: true,
-      label: "Golongan Darah",
-    },
-    pekerjaan: {
-      required: true,
-      label: "Pekerjaan",
-      maxLength: 100,
-    },
-    kewarganegaraan: {
-      required: true,
-      label: "Kewarganegaraan",
-      maxLength: 50,
-    },
-  };
-
   const filterOptions = [
     {
       key: "jenis_kelamin",
@@ -227,19 +100,109 @@ const KTP = () => {
     },
   ];
 
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        ...searchParams,
+        ...filters,
+      };
+      
+      const response = await ktpService.getKTPs(params);
+      setData(response.data);
+      setPagination({
+        page: response.pagination.current_page,
+        limit: response.pagination.limit,
+        total_items: response.pagination.total_items,
+        total_pages: response.pagination.total_pages,
+      });
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching KTP data:", err);
+      setError("Gagal memuat data KTP. Silakan coba lagi nanti.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [pagination.page, pagination.limit, searchParams, filters]);
+
+  const handlePageChange = (page) => {
+    setPagination((prev) => ({ ...prev, page }));
+  };
+
+  const handleLimitChange = (limit) => {
+    setPagination((prev) => ({ ...prev, page: 1, limit }));
+  };
+
+  const handleSearch = (search) => {
+    setSearchParams((prev) => ({ ...prev, search }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handleSort = (key, order) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      sort_by: key,
+      sort_order: order,
+    }));
+  };
+
+  const handleFilterChange = (filters) => {
+    setFilters(filters);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
   return (
-    <CRUDManager
-      title="Data KTP"
-      description="Kelola data Kartu Tanda Penduduk"
-      service={ktpService}
-      columns={columns}
-      formFields={formFields}
-      initialFormData={initialFormData}
-      validationRules={validationRules}
-      searchPlaceholder="Cari NIK, alamat, tempat lahir, atau pekerjaan..."
-      filterOptions={filterOptions}
-      icon="🆔"
-    />
+    <div className="bg-white shadow rounded-lg p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+          <span className="mr-2">📇</span>
+          KTP
+        </h1>
+        <p className="text-gray-600">
+          Data Kartu Tanda Penduduk (hanya untuk melihat data)
+        </p>
+      </div>
+
+      <SearchFilter
+        onSearch={handleSearch}
+        onFilterChange={handleFilterChange}
+        filterOptions={filterOptions}
+        searchPlaceholder="Cari berdasarkan NIK atau alamat..."
+      />
+
+      {loading && <LoadingSpinner />}
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <DataTable
+          data={data}
+          columns={columns}
+          pagination={{
+            page: pagination.page,
+            limit: pagination.limit,
+            total_items: pagination.total_items,
+            total_pages: pagination.total_pages,
+            onPageChange: handlePageChange,
+            onLimitChange: handleLimitChange,
+          }}
+          onSort={handleSort}
+          sortBy={searchParams.sort_by}
+          sortOrder={searchParams.sort_order}
+          emptyMessage="Tidak ada data KTP yang ditemukan"
+        />
+      )}
+    </div>
   );
 };
 

@@ -33,5 +33,12 @@ export const KTP_ENUMS = {
     { value: "KAWIN", label: "Kawin" },
     { value: "CERAI_HIDUP", label: "Cerai Hidup" },
     { value: "CERAI_MATI", label: "Cerai Mati" }
+  ],
+  GOLONGAN_DARAH: [
+    { value: "A", label: "A" },
+    { value: "B", label: "B" },
+    { value: "AB", label: "AB" },
+    { value: "O", label: "O" },
+    { value: "TIDAK_TAHU", label: "Tidak Tahu" }
   ]
 };

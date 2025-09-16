@@ -37,17 +37,20 @@ const KTP = () => {
     {
       key: "jenis_kelamin",
       title: "Jenis Kelamin",
-      render: (value) => (
-        <span
-          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            value === "laki_laki"
-              ? "bg-blue-100 text-blue-800"
-              : "bg-pink-100 text-pink-800"
-          }`}
-        >
-          {KTP_ENUMS.JENIS_KELAMIN[value] || value}
-        </span>
-      ),
+      render: (value) => {
+        const jenisKelamin = KTP_ENUMS.JENIS_KELAMIN.find(item => item.value === value);
+        return (
+          <span
+            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+              value === "L"
+                ? "bg-blue-100 text-blue-800"
+                : "bg-pink-100 text-pink-800"
+            }`}
+          >
+            {jenisKelamin ? jenisKelamin.label : value}
+          </span>
+        );
+      },
       sortable: true,
     },
     {
@@ -86,10 +89,7 @@ const KTP = () => {
       label: "Jenis Kelamin",
       type: "select",
       required: true,
-      options: Object.entries(KTP_ENUMS.JENIS_KELAMIN).map(([key, value]) => ({
-        value: key,
-        label: value,
-      })),
+      options: KTP_ENUMS.JENIS_KELAMIN,
       icon: "👤",
     },
     {
@@ -97,10 +97,7 @@ const KTP = () => {
       label: "Agama",
       type: "select",
       required: true,
-      options: Object.entries(KTP_ENUMS.AGAMA).map(([key, value]) => ({
-        value: key,
-        label: value,
-      })),
+      options: KTP_ENUMS.AGAMA,
       icon: "🕌",
     },
     {
@@ -108,12 +105,7 @@ const KTP = () => {
       label: "Status Perkawinan",
       type: "select",
       required: true,
-      options: Object.entries(KTP_ENUMS.STATUS_PERKAWINAN).map(
-        ([key, value]) => ({
-          value: key,
-          label: value,
-        })
-      ),
+      options: KTP_ENUMS.STATUS_PERKAWINAN,
       icon: "💍",
     },
     {
@@ -121,10 +113,7 @@ const KTP = () => {
       label: "Golongan Darah",
       type: "select",
       required: true,
-      options: Object.entries(KTP_ENUMS.GOLONGAN_DARAH).map(([key, value]) => ({
-        value: key,
-        label: value,
-      })),
+      options: KTP_ENUMS.GOLONGAN_DARAH,
       icon: "🩸",
     },
     {
@@ -222,30 +211,19 @@ const KTP = () => {
       key: "jenis_kelamin",
       label: "Jenis Kelamin",
       placeholder: "Filter Jenis Kelamin",
-      options: Object.entries(KTP_ENUMS.JENIS_KELAMIN).map(([key, value]) => ({
-        value: key,
-        label: value,
-      })),
+      options: KTP_ENUMS.JENIS_KELAMIN,
     },
     {
       key: "agama",
       label: "Agama",
       placeholder: "Filter Agama",
-      options: Object.entries(KTP_ENUMS.AGAMA).map(([key, value]) => ({
-        value: key,
-        label: value,
-      })),
+      options: KTP_ENUMS.AGAMA,
     },
     {
       key: "status_perkawinan",
       label: "Status Perkawinan",
       placeholder: "Filter Status Perkawinan",
-      options: Object.entries(KTP_ENUMS.STATUS_PERKAWINAN).map(
-        ([key, value]) => ({
-          value: key,
-          label: value,
-        })
-      ),
+      options: KTP_ENUMS.STATUS_PERKAWINAN,
     },
   ];
 

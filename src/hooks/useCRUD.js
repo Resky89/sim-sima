@@ -51,7 +51,6 @@ export const useCRUD = ({
       setError("");
 
       // Check if service has the right method
-      let serviceMethod;
       let response;
 
       if (service.getUsers) {
@@ -62,6 +61,9 @@ export const useCRUD = ({
         response = await service.getSIMList(params);
       } else if (service.getList) {
         response = await service.getList(params);
+      } else if (typeof service.get === 'function') {
+        // Fallback untuk service yang menggunakan metode get
+        response = await service.get(params);
       } else {
         throw new Error("No suitable service method found");
       }

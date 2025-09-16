@@ -19,11 +19,14 @@ const SIM = () => {
     {
       key: "jenis_sim",
       title: "Jenis SIM",
-      render: (value) => (
-        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-          {SIM_ENUMS.JENIS_SIM[value] || value}
-        </span>
-      ),
+      render: (value) => {
+        const jenisSim = SIM_ENUMS.JENIS_SIM.find(item => item.value === value);
+        return (
+          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+            {jenisSim ? jenisSim.label : value}
+          </span>
+        );
+      },
     },
     {
       key: "tanggal_terbit",
@@ -73,10 +76,7 @@ const SIM = () => {
       label: "Jenis SIM",
       type: "select",
       required: true,
-      options: Object.entries(SIM_ENUMS.JENIS_SIM).map(([key, value]) => ({
-        value: key,
-        label: value,
-      })),
+      options: SIM_ENUMS.JENIS_SIM,
       icon: "📋",
     },
     {
@@ -152,10 +152,7 @@ const SIM = () => {
       key: "jenis_sim",
       label: "Jenis SIM",
       placeholder: "Filter Jenis SIM",
-      options: Object.entries(SIM_ENUMS.JENIS_SIM).map(([key, value]) => ({
-        value: key,
-        label: value,
-      })),
+      options: SIM_ENUMS.JENIS_SIM,
     },
   ];
 

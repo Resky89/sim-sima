@@ -21,10 +21,12 @@ const Users = () => {
       render: (value) => (
         <span
           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            value ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            value === 1 || value === true
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
           }`}
         >
-          {value ? "Aktif" : "Tidak Aktif"}
+          {value === 1 || value === true ? "Aktif" : "Tidak Aktif"}
         </span>
       ),
     },
@@ -60,7 +62,7 @@ const Users = () => {
       name: "password",
       label: "Password",
       type: "password",
-      required: true,
+      required: false, // Password tidak wajib saat update
       placeholder: "Masukkan password",
       icon: "🔒",
     },
@@ -81,7 +83,7 @@ const Users = () => {
     email: "",
     full_name: "",
     password: "",
-    is_active: true,
+    is_active: 1,
   };
 
   const validationRules = {
@@ -99,10 +101,21 @@ const Users = () => {
       maxLength: 255,
     },
     password: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Password hanya required saat create
       label: "Password",
-      minLength: 6,
+      minLength: (value) => (value ? 6 : 0), // Validasi minLength hanya jika ada nilai
       maxLength: 255,
+      custom: (value, data, isCreate) => {
+        // Jika update dan password kosong, skip validasi
+        if (!isCreate && (!value || value.trim() === "")) {
+          return null;
+        }
+        // Jika ada nilai dan kurang dari 6 karakter
+        if (value && value.length < 6) {
+          return "Password minimal 6 karakter";
+        }
+        return null;
+      },
     },
   };
 
@@ -112,8 +125,8 @@ const Users = () => {
       label: "Status",
       placeholder: "Filter Status",
       options: [
-        { value: "true", label: "Aktif" },
-        { value: "false", label: "Tidak Aktif" },
+        { value: true, label: "Aktif" },
+        { value: false, label: "Tidak Aktif" },
       ],
     },
   ];

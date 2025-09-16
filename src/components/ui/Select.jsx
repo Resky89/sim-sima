@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import "../../styles/error.css";
 
 const Select = forwardRef(
   (
@@ -15,9 +16,7 @@ const Select = forwardRef(
   ) => {
     const baseClasses =
       "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
-    const errorClasses = error
-      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-      : "";
+    const errorClasses = error ? "error-border" : "";
 
     return (
       <div className="mb-4">
@@ -39,7 +38,7 @@ const Select = forwardRef(
             </option>
           ))}
         </select>
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {error && <p className="error-text">{error}</p>}
       </div>
     );
   }

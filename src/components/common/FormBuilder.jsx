@@ -13,9 +13,12 @@ const FormBuilder = ({
   submitText = "Simpan",
   onCancel,
   className = "",
+  validateField,
+  enableRealTimeValidation = false,
 }) => {
   const [formData, setFormData] = useState(data);
   const [fieldErrors, setFieldErrors] = useState(errors);
+  const [touched, setTouched] = useState({});
 
   useEffect(() => {
     setFormData(data);
@@ -28,16 +31,37 @@ const FormBuilder = ({
   const handleFieldChange = (fieldName, value) => {
     const newData = { ...formData, [fieldName]: value };
     setFormData(newData);
-    onChange?.(newData);
 
-    // Clear field error when user starts typing
-    if (fieldErrors[fieldName]) {
+    // Mark field as touched
+    if (!touched[fieldName]) {
+      setTouched((prev) => ({ ...prev, [fieldName]: true }));
+    }
+
+    // Validate field in real-time if enabled and function provided
+    if (enableRealTimeValidation && validateField) {
+      const fieldError = validateField(fieldName, value, newData);
+
       setFieldErrors((prev) => {
         const newErrors = { ...prev };
-        delete newErrors[fieldName];
+        if (fieldError) {
+          newErrors[fieldName] = fieldError;
+        } else {
+          delete newErrors[fieldName];
+        }
         return newErrors;
       });
+    } else {
+      // Clear field error when user starts typing (default behavior)
+      if (fieldErrors[fieldName]) {
+        setFieldErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[fieldName];
+          return newErrors;
+        });
+      }
     }
+
+    onChange?.(fieldName, value, newData);
   };
 
   const handleSubmit = async (e) => {

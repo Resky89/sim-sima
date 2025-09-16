@@ -34,6 +34,7 @@ export const useCRUD = ({
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [realTimeValidation, setRealTimeValidation] = useState(false);
 
   // Search and filter states
   const [searchParams, setSearchParams] = useState({
@@ -49,21 +50,41 @@ export const useCRUD = ({
     try {
       setLoading(true);
       setError("");
+      setFormErrors({});
+
+      // Validasi parameter pencarian
+      if (params.search && typeof params.search === 'string' && params.search.length > 100) {
+        throw new Error("Kata kunci pencarian tidak boleh lebih dari 100 karakter");
+      }
+
+      if (params.page && (isNaN(params.page) || params.page < 1)) {
+        throw new Error("Nomor halaman tidak valid");
+      }
+
+      if (params.limit && (isNaN(params.limit) || params.limit < 1 || params.limit > 100)) {
+        throw new Error("Jumlah data per halaman tidak valid");
+      }
 
       // Check if service has the right method
       let response;
+      let methodName = "";
 
       if (service.getUsers) {
         response = await service.getUsers(params);
+        methodName = "getUsers";
       } else if (service.getKTPList) {
         response = await service.getKTPList(params);
+        methodName = "getKTPList";
       } else if (service.getSIMList) {
         response = await service.getSIMList(params);
+        methodName = "getSIMList";
       } else if (service.getList) {
         response = await service.getList(params);
+        methodName = "getList";
       } else if (typeof service.get === 'function') {
         // Fallback untuk service yang menggunakan metode get
         response = await service.get(params);
+        methodName = "get";
       } else {
         throw new Error("No suitable service method found");
       }
@@ -73,11 +94,38 @@ export const useCRUD = ({
         setData(transformedData);
         setPagination(response.pagination || {});
       } else {
-        setError(response.errors || "Gagal memuat data");
+        // Handling error dari backend
+        if (response.errors) {
+          if (typeof response.errors === 'object' && !Array.isArray(response.errors)) {
+            // Error berupa object dengan field sebagai key
+            setFormErrors(response.errors);
+          } else if (Array.isArray(response.errors)) {
+            // Error berupa array dari object dengan path dan message
+            const errorObj = {};
+            response.errors.forEach(err => {
+              if (err.path) {
+                errorObj[err.path] = err.message;
+              }
+            });
+            
+            if (Object.keys(errorObj).length > 0) {
+              setFormErrors(errorObj);
+            } else {
+              setError("Gagal memuat data: " + JSON.stringify(response.errors));
+            }
+          } else {
+            // Error berupa string
+            setError(response.errors);
+          }
+        } else {
+          setError(`Gagal memuat data dari ${methodName}`);
+        }
         setData([]);
       }
     } catch (error) {
-      setError(getErrorMessage(error));
+      const errorMessage = getErrorMessage(error);
+      console.error(`Error in loadData: ${errorMessage}`, error);
+      setError(errorMessage);
       setData([]);
     } finally {
       setLoading(false);
@@ -112,36 +160,57 @@ export const useCRUD = ({
     setFormData(initialFormData);
     setFormErrors({});
     setError("");
+    setRealTimeValidation(false);
   };
 
-  const validateForm = (data) => {
+  // Validasi field tunggal untuk real-time validation
+  const validateField = (field, value, data, isCreate = false) => {
+    const rules = validationRules[field];
+    if (!rules) return null;
+
+    // Cek apakah required adalah fungsi atau boolean
+    const isRequired = typeof rules.required === 'function' 
+      ? rules.required(value, isCreate) 
+      : rules.required;
+
+    if (isRequired && (!value || value.toString().trim() === "")) {
+      return `${rules.label || field} wajib diisi`;
+    }
+
+    // Cek apakah minLength adalah fungsi atau number
+    const minLengthValue = typeof rules.minLength === 'function'
+      ? rules.minLength(value)
+      : rules.minLength;
+
+    if (value && minLengthValue && value.toString().length < minLengthValue) {
+      return `${rules.label || field} minimal ${minLengthValue} karakter`;
+    }
+
+    if (value && rules.maxLength && value.toString().length > rules.maxLength) {
+      return `${rules.label || field} maksimal ${rules.maxLength} karakter`;
+    }
+
+    if (value && rules.pattern && !rules.pattern.test(value)) {
+      return rules.patternMessage || `Format ${rules.label || field} tidak valid`;
+    }
+
+    if (rules.custom && typeof rules.custom === "function") {
+      const customError = rules.custom(value, data, isCreate);
+      if (customError) {
+        return customError;
+      }
+    }
+
+    return null;
+  };
+
+  const validateForm = (data, isCreate = false) => {
     const errors = {};
 
     Object.keys(validationRules).forEach((field) => {
-      const rules = validationRules[field];
-      const value = data[field];
-
-      if (rules.required && (!value || value.toString().trim() === "")) {
-        errors[field] = `${rules.label || field} wajib diisi`;
-      }
-
-      if (value && rules.minLength && value.toString().length < rules.minLength) {
-        errors[field] = `${rules.label || field} minimal ${rules.minLength} karakter`;
-      }
-
-      if (value && rules.maxLength && value.toString().length > rules.maxLength) {
-        errors[field] = `${rules.label || field} maksimal ${rules.maxLength} karakter`;
-      }
-
-      if (value && rules.pattern && !rules.pattern.test(value)) {
-        errors[field] = rules.patternMessage || `Format ${rules.label || field} tidak valid`;
-      }
-
-      if (rules.custom && typeof rules.custom === "function") {
-        const customError = rules.custom(value, data);
-        if (customError) {
-          errors[field] = customError;
-        }
+      const error = validateField(field, data[field], data, isCreate);
+      if (error) {
+        errors[field] = error;
       }
     });
 
@@ -155,8 +224,9 @@ export const useCRUD = ({
       setError("");
       setFormErrors({});
 
-      // Client-side validation
-      const errors = validateForm(formData);
+      // Client-side validation - pass isCreate flag
+      const isCreate = modals.create;
+      const errors = validateForm(formData, isCreate);
       if (Object.keys(errors).length > 0) {
         setFormErrors(errors);
         return;
@@ -174,15 +244,66 @@ export const useCRUD = ({
         closeModal(modals.create ? 'create' : 'edit');
         await loadData();
       } else {
-        if (response.errors && typeof response.errors === "object") {
-          setFormErrors(response.errors);
+        // Handling error dari backend
+        if (response.errors) {
+          if (typeof response.errors === 'object' && !Array.isArray(response.errors)) {
+            // Error berupa object dengan field sebagai key
+            setFormErrors(response.errors);
+          } else if (Array.isArray(response.errors)) {
+            // Error berupa array dari object dengan path dan message
+            const errorObj = {};
+            response.errors.forEach(err => {
+              if (err.path) {
+                errorObj[err.path] = err.message;
+              }
+            });
+            
+            if (Object.keys(errorObj).length > 0) {
+              setFormErrors(errorObj);
+            } else {
+              setError("Gagal menyimpan data: " + JSON.stringify(response.errors));
+            }
+          } else {
+            // Error berupa string
+            setError(response.errors);
+          }
         } else {
-          setError(response.errors || "Gagal menyimpan data");
+          setError("Gagal menyimpan data");
         }
       }
     } catch (error) {
       const errorMessage = getErrorMessage(error);
-      setError(errorMessage);
+      console.error(`Error in handleSubmit: ${errorMessage}`, error);
+      
+      // Coba ekstrak error dari response jika ada
+      if (error.response && error.response.data) {
+        const responseData = error.response.data;
+        
+        if (responseData.errors) {
+          if (typeof responseData.errors === 'object' && !Array.isArray(responseData.errors)) {
+            setFormErrors(responseData.errors);
+          } else if (Array.isArray(responseData.errors)) {
+            const errorObj = {};
+            responseData.errors.forEach(err => {
+              if (err.path) {
+                errorObj[err.path] = err.message;
+              }
+            });
+            
+            if (Object.keys(errorObj).length > 0) {
+              setFormErrors(errorObj);
+            } else {
+              setError(errorMessage);
+            }
+          } else {
+            setError(responseData.errors || errorMessage);
+          }
+        } else {
+          setError(errorMessage);
+        }
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -224,16 +345,79 @@ export const useCRUD = ({
 
   // Search handler
   const handleSearch = (search) => {
+    // Validasi input pencarian
+    if (search && typeof search === 'string' && search.length > 100) {
+      setError("Kata kunci pencarian tidak boleh lebih dari 100 karakter");
+      return;
+    }
+    
     const newParams = { ...searchParams, search, page: 1 };
     setSearchParams(newParams);
-    loadData(newParams);
+    
+    try {
+      loadData(newParams);
+    } catch (error) {
+      setError(getErrorMessage(error));
+    }
   };
 
   // Filter handler
   const handleFilter = (filters) => {
+    // Validasi filter
+    if (filters && typeof filters === 'object') {
+      // Validasi sort_by dan sort_order jika ada
+      if (filters.sort_by && !['created_at', 'updated_at', 'full_name', 'email', 'nik', 'nomor_sim'].includes(filters.sort_by)) {
+        setError("Field sorting tidak valid");
+        return;
+      }
+      
+      if (filters.sort_order && !['asc', 'desc'].includes(filters.sort_order)) {
+        setError("Urutan sorting tidak valid");
+        return;
+      }
+      
+      // Validasi page dan limit
+      if (filters.page && (isNaN(filters.page) || filters.page < 1)) {
+        setError("Nomor halaman tidak valid");
+        return;
+      }
+      
+      if (filters.limit && (isNaN(filters.limit) || filters.limit < 1 || filters.limit > 100)) {
+        setError("Jumlah data per halaman tidak valid");
+        return;
+      }
+    }
+    
     const newParams = { ...searchParams, ...filters, page: 1 };
     setSearchParams(newParams);
-    loadData(newParams);
+    
+    try {
+      loadData(newParams);
+    } catch (error) {
+      setError(getErrorMessage(error));
+    }
+  };
+
+  // Handle form field change with real-time validation
+  const handleFormChange = (field, value) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    
+    // Jika real-time validation aktif, validasi field yang diubah
+    if (realTimeValidation) {
+      const isCreate = modals.create;
+      const fieldError = validateField(field, value, newFormData, isCreate);
+      
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        if (fieldError) {
+          newErrors[field] = fieldError;
+        } else {
+          delete newErrors[field];
+        }
+        return newErrors;
+      });
+    }
   };
 
   return {
@@ -248,6 +432,7 @@ export const useCRUD = ({
     formErrors,
     submitting,
     searchParams,
+    realTimeValidation,
 
     // Actions
     loadData,
@@ -257,6 +442,7 @@ export const useCRUD = ({
     setFormData,
     setFormErrors,
     setError,
+    setRealTimeValidation,
 
     // Handlers
     handleSubmit,
@@ -265,5 +451,7 @@ export const useCRUD = ({
     handleLimitChange,
     handleSearch,
     handleFilter,
+    handleFormChange,
+    validateField,
   };
 };

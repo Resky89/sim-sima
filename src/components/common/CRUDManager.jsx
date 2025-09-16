@@ -33,15 +33,19 @@ const CRUDManager = ({
     formData,
     formErrors,
     submitting,
+    realTimeValidation,
     openModal,
     closeModal,
-    setFormData,
+    // setFormData,
+    setRealTimeValidation,
     handleSubmit,
     handleDelete,
     handlePageChange,
     handleLimitChange,
     handleSearch,
     handleFilter,
+    handleFormChange,
+    validateField,
   } = useCRUD({
     service,
     initialFormData,
@@ -164,11 +168,22 @@ const CRUDManager = ({
             fields={formFields}
             data={formData}
             errors={formErrors}
-            onChange={setFormData}
-            onSubmit={handleSubmit}
+            onChange={(field, value) => {
+              handleFormChange(field, value);
+            }}
+            onSubmit={(data) => {
+              // Aktifkan real-time validation saat submit
+              setRealTimeValidation(true);
+              handleSubmit(data);
+            }}
             loading={submitting}
             submitText="Simpan"
-            onCancel={() => closeModal("create")}
+            onCancel={() => {
+              setRealTimeValidation(false);
+              closeModal("create");
+            }}
+            validateField={validateField}
+            enableRealTimeValidation={realTimeValidation}
           />
         </div>
       </Modal>
@@ -185,11 +200,22 @@ const CRUDManager = ({
             fields={formFields}
             data={formData}
             errors={formErrors}
-            onChange={setFormData}
-            onSubmit={handleSubmit}
+            onChange={(field, value) => {
+              handleFormChange(field, value);
+            }}
+            onSubmit={(data) => {
+              // Aktifkan real-time validation saat submit
+              setRealTimeValidation(true);
+              handleSubmit(data);
+            }}
             loading={submitting}
             submitText="Simpan Perubahan"
-            onCancel={() => closeModal("edit")}
+            onCancel={() => {
+              setRealTimeValidation(false);
+              closeModal("edit");
+            }}
+            validateField={validateField}
+            enableRealTimeValidation={realTimeValidation}
           />
         </div>
       </Modal>

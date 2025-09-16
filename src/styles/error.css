@@ -1,0 +1,24 @@
+/* Error styling untuk konsistensi di seluruh aplikasi */
+.error-text {
+  @apply mt-1 text-sm text-red-600 font-medium;
+}
+
+.error-border {
+  @apply border-red-300 focus:ring-red-500 focus:border-red-500;
+}
+
+.error-icon {
+  @apply text-red-500 mr-1;
+}
+
+.error-container {
+  @apply bg-red-50 border border-red-200 rounded-md p-3 mb-4;
+}
+
+.error-title {
+  @apply text-red-800 font-medium;
+}
+
+.error-message {
+  @apply text-red-700 text-sm mt-1;
+}

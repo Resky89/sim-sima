@@ -13,6 +13,17 @@ export const SIM_ENUMS = {
     { value: "AKTIF", label: "Aktif" },
     { value: "TIDAK_AKTIF", label: "Tidak Aktif" },
     { value: "EXPIRED", label: "Expired" }
+  ],
+  JENIS_KELAMIN: [
+    { value: "laki_laki", label: "Laki-laki" },
+    { value: "perempuan", label: "Perempuan" }
+  ],
+  GOLONGAN_DARAH: [
+    { value: "a", label: "A" },
+    { value: "b", label: "B" },
+    { value: "ab", label: "AB" },
+    { value: "o", label: "O" },
+    { value: "tidak_tahu", label: "Tidak Tahu" }
   ]
 };
 

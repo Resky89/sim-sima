@@ -81,11 +81,6 @@ const KTP = () => {
       },
       sortable: true,
     },
-    {
-      key: "creator_name",
-      title: "Dibuat Oleh",
-      render: (value) => <div className="text-gray-600">{value || "-"}</div>,
-    },
   ];
 
   const filterOptions = [

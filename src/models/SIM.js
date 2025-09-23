@@ -41,6 +41,19 @@ class SIM {
    * @returns {Object} Representasi JSON dari SIM
    */
   toJSON() {
+    // Fungsi untuk menangani nilai yang mungkin berupa File object
+    const handleFileValue = (value) => {
+      if (value instanceof File) {
+        return {
+          name: value.name,
+          type: value.type,
+          size: value.size,
+          lastModified: value.lastModified
+        };
+      }
+      return value;
+    };
+
     return {
       id: this.id,
       user_id: this.user_id,
@@ -59,9 +72,10 @@ class SIM {
       kecamatan: this.kecamatan,
       kelurahan: this.kelurahan,
       jenis_sim: this.jenis_sim,
-      ktp_path: this.ktp_path,
-      pas_foto_path: this.pas_foto_path,
-      surat_kesehatan_path: this.surat_kesehatan_path,
+      ktp_path: handleFileValue(this.ktp_path),
+      pas_foto_path: handleFileValue(this.pas_foto_path),
+      surat_kesehatan_path: handleFileValue(this.surat_kesehatan_path),
+      picture_path: handleFileValue(this.picture_path), // Tambahkan picture_path
       status: this.status,
       catatan: this.catatan,
       tanggal_pengajuan: this.tanggal_pengajuan,

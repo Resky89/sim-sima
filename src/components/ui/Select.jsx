@@ -33,7 +33,10 @@ const Select = forwardRef(
         >
           <option value="">{placeholder}</option>
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option 
+              key={option.value} 
+              value={typeof option.value === "boolean" ? String(option.value) : option.value}
+            >
               {option.label}
             </option>
           ))}

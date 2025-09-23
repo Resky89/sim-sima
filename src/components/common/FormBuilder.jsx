@@ -103,7 +103,19 @@ const FormBuilder = ({
             {...commonProps}
             options={options}
             placeholder={placeholder || `Pilih ${label}`}
-            onChange={(e) => handleFieldChange(name, e.target.value)}
+            onChange={(e) => {
+              // Konversi nilai ke boolean jika opsi adalah boolean
+              const isBoolean = options.some(opt => typeof opt.value === "boolean");
+              let value = e.target.value;
+              
+              // Konversi string "true"/"false" ke boolean jika field memiliki opsi boolean
+              if (isBoolean) {
+                if (value === "true") value = true;
+                if (value === "false") value = false;
+              }
+              
+              handleFieldChange(name, value);
+            }}
           />
         );
 
@@ -231,19 +243,48 @@ const FormBuilder = ({
             </label>
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
               <div className="space-y-1 text-center">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                >
-                  <path
-                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                {/* Render preview if field has renderPreview function and value exists */}
+                {field.renderPreview && fieldValue ? (
+                  field.renderPreview(fieldValue)
+                ) : fieldValue ? (
+                  <div className="mt-2 mb-4 border rounded-lg overflow-hidden w-full max-w-xs mx-auto">
+                    {fieldValue instanceof File ? (
+                      <img 
+                        src={URL.createObjectURL(fieldValue)}
+                        alt={`${label} Preview`} 
+                        className="w-full h-auto object-contain"
+                      />
+                    ) : typeof fieldValue === 'object' && (fieldValue.path || fieldValue.url || fieldValue.preview) ? (
+                      <img 
+                        src={fieldValue.url || fieldValue.preview || fieldValue.path}
+                        alt={`${label}`} 
+                        className="w-full h-auto object-contain"
+                      />
+                    ) : typeof fieldValue === 'string' ? (
+                      <img 
+                        src={fieldValue.startsWith('http') || fieldValue.startsWith('blob:') || fieldValue.startsWith('data:') 
+                          ? fieldValue 
+                          : `${import.meta.env.VITE_API_URL || ''}${fieldValue}`}
+                        alt={`${label}`} 
+                        className="w-full h-auto object-contain"
+                      />
+                    ) : null}
+                  </div>
+                ) : (
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    stroke="currentColor"
+                    fill="none"
+                    viewBox="0 0 48 48"
+                  >
+                    <path
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
                 <div className="flex text-sm text-gray-600">
                   <label
                     htmlFor={name}

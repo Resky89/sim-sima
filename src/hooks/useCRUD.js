@@ -141,7 +141,28 @@ export const useCRUD = ({
     setModals(prev => ({ ...prev, [type]: true }));
     if (item) {
       setSelectedItem(item);
-      setFormData({ ...initialFormData, ...item });
+      
+      // Format tanggal untuk input type="date"
+      const formattedItem = { ...item };
+      Object.keys(formattedItem).forEach(key => {
+        // Cek apakah nilai adalah tanggal valid dan perlu diformat
+        if (formattedItem[key] && typeof formattedItem[key] === 'string') {
+          // Hanya format field yang memang bertipe tanggal
+          if (key.includes('tanggal') || key.includes('date') || key.includes('expired')) {
+            const dateValue = new Date(formattedItem[key]);
+            // Validasi tanggal
+            if (!isNaN(dateValue.getTime())) {
+              // Format tanggal ke YYYY-MM-DD untuk input type="date"
+              const year = dateValue.getFullYear();
+              const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+              const day = String(dateValue.getDate()).padStart(2, '0');
+              formattedItem[key] = `${year}-${month}-${day}`;
+            }
+          }
+        }
+      });
+      
+      setFormData({ ...initialFormData, ...formattedItem });
     } else {
       resetForm();
     }
@@ -157,7 +178,8 @@ export const useCRUD = ({
 
   // Form handlers
   const resetForm = () => {
-    setFormData(initialFormData);
+    // Gunakan objek kosong untuk form tambah data baru
+    setFormData({});
     setFormErrors({});
     setError("");
     setRealTimeValidation(false);
@@ -232,12 +254,69 @@ export const useCRUD = ({
         return;
       }
 
+      // Persiapkan data untuk dikirim ke server
+      // Jika ada file, gunakan FormData
+      const hasFileInput = Object.values(formData).some(
+        value => value instanceof File || 
+                (typeof value === 'object' && value !== null && 
+                 (value.type?.includes('image/') || value.name?.match(/\.(jpg|jpeg|png|gif|svg)$/i)))
+      );
+
+      let dataToSend;
+      if (hasFileInput) {
+        // Gunakan FormData untuk mengirim file
+        dataToSend = new FormData();
+        
+        // Tambahkan semua field ke FormData
+        Object.keys(formData).forEach(key => {
+          const value = formData[key];
+          
+          // Skip empty values
+          if (value === "" || value === null || value === undefined) {
+            return;
+          }
+          
+          // Jika nilai adalah File, tambahkan langsung
+          if (value instanceof File) {
+            dataToSend.append(key, value);
+          } 
+          // Jika nilai adalah object dengan property yang menunjukkan file
+          else if (typeof value === 'object' && value !== null && !Array.isArray(value) && 
+                  (value.type?.includes('image/') || value.name?.match(/\.(jpg|jpeg|png|gif|svg)$/i))) {
+            // Jika object memiliki property 'file' yang berisi File object
+            if (value.file instanceof File) {
+              dataToSend.append(key, value.file);
+            } else {
+              // Jika tidak ada file, kirim sebagai JSON string
+              dataToSend.append(key, JSON.stringify(value));
+            }
+          } 
+          // Untuk array atau object lainnya, konversi ke JSON string
+          else if (typeof value === 'object' && value !== null) {
+            dataToSend.append(key, JSON.stringify(value));
+          } 
+          // Untuk nilai primitif, tambahkan langsung
+          else {
+            dataToSend.append(key, value);
+          }
+        });
+      } else {
+        // Gunakan object biasa jika tidak ada file
+        dataToSend = {};
+        Object.keys(formData).forEach(key => {
+          // Include field only if it has a value (not empty string, null, or undefined)
+          if (formData[key] !== "" && formData[key] !== null && formData[key] !== undefined) {
+            dataToSend[key] = formData[key];
+          }
+        });
+      }
+
       let response;
       if (modals.create) {
-        response = await service.create(formData);
+        response = await service.create(dataToSend);
       } else {
         const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id;
-        response = await service.update(itemId, formData);
+        response = await service.update(itemId, dataToSend);
       }
 
       if (response.success) {

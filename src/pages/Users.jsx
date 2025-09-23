@@ -30,15 +30,6 @@ const Users = () => {
         </span>
       ),
     },
-    {
-      key: "created_at",
-      title: "Dibuat",
-      render: (value) => (
-        <div className="text-sm text-gray-500">
-          {value ? new Date(value).toLocaleDateString("id-ID") : "-"}
-        </div>
-      ),
-    },
   ];
 
   const formFields = [
@@ -46,7 +37,7 @@ const Users = () => {
       name: "full_name",
       label: "Nama Lengkap",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Masukkan nama lengkap",
       icon: "👤",
     },
@@ -54,7 +45,7 @@ const Users = () => {
       name: "email",
       label: "Email",
       type: "email",
-      required: true,
+      required: false,
       placeholder: "user@example.com",
       icon: "📧",
     },
@@ -70,7 +61,7 @@ const Users = () => {
       name: "is_active",
       label: "Status",
       type: "select",
-      required: true,
+      required: false,
       options: [
         { value: true, label: "Aktif" },
         { value: false, label: "Tidak Aktif" },
@@ -83,18 +74,18 @@ const Users = () => {
     email: "",
     full_name: "",
     password: "",
-    is_active: 1,
+    is_active: true,
   };
 
   const validationRules = {
     full_name: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Nama Lengkap",
       minLength: 2,
       maxLength: 255,
     },
     email: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Email",
       pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       patternMessage: "Format email tidak valid",
@@ -103,7 +94,7 @@ const Users = () => {
     password: {
       required: (_, isCreate) => isCreate, // Password hanya required saat create
       label: "Password",
-      minLength: (value) => (value ? 6 : 0), // Validasi minLength hanya jika ada nilai
+      minLength: (value) => (value ? 8 : 0), // Validasi minLength hanya jika ada nilai
       maxLength: 255,
       custom: (value, data, isCreate) => {
         // Jika update dan password kosong, skip validasi
@@ -111,8 +102,8 @@ const Users = () => {
           return null;
         }
         // Jika ada nilai dan kurang dari 6 karakter
-        if (value && value.length < 6) {
-          return "Password minimal 6 karakter";
+        if (value && value.length < 8) {
+          return "Password minimal 8 karakter";
         }
         return null;
       },

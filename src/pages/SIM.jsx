@@ -42,15 +42,7 @@ const SIM = () => {
         );
       },
     },
-    {
-      key: "tanggal_terbit",
-      title: "Tanggal Terbit",
-      render: (value) => (
-        <div className="text-gray-600 text-sm">
-          {value ? new Date(value).toLocaleDateString("id-ID") : "-"}
-        </div>
-      ),
-    },
+
     {
       key: "tanggal_expired",
       title: "Tanggal Expired",
@@ -81,7 +73,7 @@ const SIM = () => {
       name: "nomor_sim",
       label: "Nomor SIM",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "16 digit angka",
       icon: "🚗",
     },
@@ -89,7 +81,7 @@ const SIM = () => {
       name: "full_name",
       label: "Nama Lengkap",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Nama lengkap sesuai KTP",
       icon: "👤",
     },
@@ -97,7 +89,7 @@ const SIM = () => {
       name: "nik",
       label: "NIK",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "16 digit angka NIK",
       icon: "🆔",
     },
@@ -105,22 +97,15 @@ const SIM = () => {
       name: "jenis_sim",
       label: "Jenis SIM",
       type: "select",
-      required: true,
+      required: false,
       options: SIM_ENUMS.JENIS_SIM,
       icon: "📋",
-    },
-    {
-      name: "tanggal_terbit",
-      label: "Tanggal Terbit",
-      type: "date",
-      required: true,
-      icon: "📅",
     },
     {
       name: "tanggal_expired",
       label: "Tanggal Expired",
       type: "date",
-      required: true,
+      required: false,
       icon: "⏰",
     },
     {
@@ -143,7 +128,7 @@ const SIM = () => {
       name: "tempat_lahir",
       label: "Tempat Lahir",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Kota kelahiran",
       icon: "🏙️",
     },
@@ -151,14 +136,14 @@ const SIM = () => {
       name: "tanggal_lahir",
       label: "Tanggal Lahir",
       type: "date",
-      required: true,
+      required: false,
       icon: "📅",
     },
     {
       name: "pekerjaan",
       label: "Pekerjaan",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Profesi/pekerjaan",
       icon: "💼",
     },
@@ -166,7 +151,7 @@ const SIM = () => {
       name: "rt",
       label: "RT",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Nomor RT",
       icon: "🏘️",
     },
@@ -174,7 +159,7 @@ const SIM = () => {
       name: "rw",
       label: "RW",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Nomor RW",
       icon: "🏘️",
     },
@@ -182,7 +167,7 @@ const SIM = () => {
       name: "kecamatan",
       label: "Kecamatan",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Nama kecamatan",
       icon: "🏙️",
     },
@@ -190,7 +175,7 @@ const SIM = () => {
       name: "kabupaten",
       label: "Kabupaten/Kota",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Nama kabupaten/kota",
       icon: "🏙️",
     },
@@ -198,129 +183,143 @@ const SIM = () => {
       name: "provinsi",
       label: "Provinsi",
       type: "text",
-      required: true,
+      required: false,
       placeholder: "Nama provinsi",
       icon: "🏙️",
     },
     {
       name: "picture_path",
       label: "Foto SIM",
-      type: "text",
-      required: true,
-      placeholder: "Path foto SIM",
+      type: "file",
+      required: false,
+      accept: "image/*",
       icon: "📷",
+      renderPreview: (value) => {
+        if (!value) return null;
+        
+        // Handle jika value adalah File object (saat upload)
+        if (value instanceof File) {
+          return (
+            <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
+              <img 
+                src={URL.createObjectURL(value)}
+                alt="Foto SIM Preview" 
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          );
+        }
+        
+        // Handle jika value adalah object dengan property path atau url (dari FormData)
+        if (typeof value === 'object' && (value.path || value.url || value.preview)) {
+          const imgSrc = value.url || value.preview || value.path;
+          return (
+            <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
+              <img 
+                src={imgSrc.startsWith('http') || imgSrc.startsWith('blob:') || imgSrc.startsWith('data:') 
+                  ? imgSrc 
+                  : `${import.meta.env.VITE_API_URL || ''}${imgSrc}`}
+                alt="Foto SIM" 
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          );
+        }
+        
+        // Handle jika value adalah string (dari server)
+        return (
+          <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
+            <img 
+              src={typeof value === 'string' && (value.startsWith('http') || value.startsWith('blob:') || value.startsWith('data:')) 
+                ? value 
+                : `${import.meta.env.VITE_API_URL || ''}${value}`}
+              alt="Foto SIM" 
+              className="w-full h-auto object-contain"
+            />
+          </div>
+        );
+      },
     },
   ];
 
-  const initialFormData = {
-    nomor_sim: "",
-    full_name: "",
-    nik: "",
-    jenis_sim: "",
-    tanggal_terbit: "",
-    tanggal_expired: "",
-    jenis_kelamin: "",
-    gol_darah: "",
-    tempat_lahir: "",
-    tanggal_lahir: "",
-    pekerjaan: "",
-    rt: "",
-    rw: "",
-    kecamatan: "",
-    kabupaten: "",
-    provinsi: "",
-    picture_path: "",
-  };
+  // Gunakan objek kosong untuk initialFormData agar form tambah SIM kosong saat dibuka
+  const initialFormData = {};
 
   const validationRules = {
     nomor_sim: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Nomor SIM",
       pattern: /^[0-9]{16}$/,
       patternMessage: "Nomor SIM harus 16 digit angka",
     },
     full_name: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Nama Lengkap",
       maxLength: 255,
     },
     nik: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "NIK",
       pattern: /^[0-9]{16}$/,
       patternMessage: "NIK harus 16 digit angka",
     },
     jenis_sim: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Jenis SIM",
     },
-    tanggal_terbit: {
-      required: true,
-      label: "Tanggal Terbit",
-    },
     tanggal_expired: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Tanggal Expired",
-      custom: (value, data) => {
-        if (
-          value &&
-          data.tanggal_terbit &&
-          new Date(value) <= new Date(data.tanggal_terbit)
-        ) {
-          return "Tanggal expired harus setelah tanggal terbit";
-        }
-        return null;
-      },
     },
     jenis_kelamin: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Jenis Kelamin",
     },
     gol_darah: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Golongan Darah",
     },
     tempat_lahir: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Tempat Lahir",
       maxLength: 100,
     },
     tanggal_lahir: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Tanggal Lahir",
     },
     pekerjaan: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Pekerjaan",
       maxLength: 100,
     },
     rt: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "RT",
       maxLength: 10,
     },
     rw: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "RW",
       maxLength: 10,
     },
     kecamatan: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Kecamatan",
       maxLength: 100,
     },
     kabupaten: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Kabupaten/Kota",
       maxLength: 100,
     },
     provinsi: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Provinsi",
       maxLength: 100,
     },
     picture_path: {
-      required: true,
+      required: (_, isCreate) => isCreate, // Hanya required saat create
       label: "Foto SIM",
     },
   };

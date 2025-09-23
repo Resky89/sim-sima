@@ -11,7 +11,7 @@ export const authService = {
 
     if (response.success) {
       const { tokens, user } = response.data;
-      setTokens(tokens.access_token, tokens.refresh_token);
+      setTokens(tokens.access_token, tokens.refresh_token, tokens.csrf_token);
       setUser(user);
       return response;
     }
@@ -35,9 +35,7 @@ export const authService = {
       throw new Error('No refresh token available');
     }
 
-    const response = await httpClient.post(API_CONFIG.ENDPOINTS.AUTH.REFRESH, {
-      refresh_token: refreshToken
-    });
+    const response = await httpClient.post(API_CONFIG.ENDPOINTS.AUTH.REFRESH);
 
     if (response.success) {
       const { tokens, user } = response.data;

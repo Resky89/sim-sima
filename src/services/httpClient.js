@@ -33,8 +33,7 @@ class HttpClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refresh_token: refreshToken })
+        }
       });
 
       const data = await response.json();
@@ -138,22 +137,26 @@ class HttpClient {
     return this.request(url, { method: 'GET' });
   }
 
-  post(endpoint, data) {
+  post(endpoint, data = {}) {
     return this.request(endpoint, {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
   }
 
-  put(endpoint, data) {
+  put(endpoint, data, headers = {}) {
     return this.request(endpoint, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      headers
     });
   }
 
-  delete(endpoint) {
-    return this.request(endpoint, { method: 'DELETE' });
+  delete(endpoint, headers = {}) {
+    return this.request(endpoint, { 
+      method: 'DELETE',
+      headers 
+    });
   }
 }
 

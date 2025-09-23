@@ -1,7 +1,10 @@
 import CRUDManager from "../components/common/CRUDManager";
 import { userService } from "../services/userService";
+import { useState } from "react";
+import "../styles/error.css";
 
 const Users = () => {
+  const [errorMessage, setErrorMessage] = useState(null);
   const columns = [
     {
       key: "full_name",
@@ -122,19 +125,46 @@ const Users = () => {
     },
   ];
 
+  // Fungsi untuk menangani error dari CRUDManager
+  const handleError = (error) => {
+    setErrorMessage(error);
+    // Scroll ke atas halaman agar notifikasi error terlihat
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <CRUDManager
-      title="Pengguna"
-      description="Kelola data pengguna sistem"
-      service={userService}
-      columns={columns}
-      formFields={formFields}
-      initialFormData={initialFormData}
-      validationRules={validationRules}
-      searchPlaceholder="Cari nama atau email pengguna..."
-      filterOptions={filterOptions}
-      icon="👥"
-    />
+    <div className="space-y-4">
+      {/* Notifikasi Error yang lebih terlihat */}
+      {errorMessage && (
+        <div className="error-container sticky top-4 z-50 mx-auto max-w-4xl shadow-lg">
+          <div className="flex items-center">
+            <span className="error-icon text-xl">⚠️</span>
+            <h3 className="error-title">Terjadi Kesalahan</h3>
+            <button 
+              className="ml-auto text-red-700 hover:text-red-900" 
+              onClick={() => setErrorMessage(null)}
+            >
+              ✕
+            </button>
+          </div>
+          <p className="error-message">{errorMessage}</p>
+        </div>
+      )}
+
+      <CRUDManager
+        title="Pengguna"
+        description="Kelola data pengguna sistem"
+        service={userService}
+        columns={columns}
+        formFields={formFields}
+        initialFormData={initialFormData}
+        validationRules={validationRules}
+        searchPlaceholder="Cari nama atau email pengguna..."
+        filterOptions={filterOptions}
+        icon="👥"
+        onError={handleError}
+      />
+    </div>
   );
 };
 

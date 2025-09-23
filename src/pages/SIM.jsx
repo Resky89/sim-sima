@@ -1,8 +1,11 @@
 import CRUDManager from "../components/common/CRUDManager";
 import { simService } from "../services/simService";
 import { SIM_ENUMS } from "../constants/enums.jsx";
+import { useState } from "react";
+import "../styles/error.css";
 
 const SIM = () => {
+  const [errorMessage, setErrorMessage] = useState(null);
   // Check if SIM is expired
   const isExpired = (tanggalExpired) => {
     return new Date(tanggalExpired) < new Date();
@@ -196,44 +199,56 @@ const SIM = () => {
       icon: "📷",
       renderPreview: (value) => {
         if (!value) return null;
-        
+
         // Handle jika value adalah File object (saat upload)
         if (value instanceof File) {
           return (
             <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
-              <img 
+              <img
                 src={URL.createObjectURL(value)}
-                alt="Foto SIM Preview" 
+                alt="Foto SIM Preview"
                 className="w-full h-auto object-contain"
               />
             </div>
           );
         }
-        
+
         // Handle jika value adalah object dengan property path atau url (dari FormData)
-        if (typeof value === 'object' && (value.path || value.url || value.preview)) {
+        if (
+          typeof value === "object" &&
+          (value.path || value.url || value.preview)
+        ) {
           const imgSrc = value.url || value.preview || value.path;
           return (
             <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
-              <img 
-                src={imgSrc.startsWith('http') || imgSrc.startsWith('blob:') || imgSrc.startsWith('data:') 
-                  ? imgSrc 
-                  : `${import.meta.env.VITE_API_URL || ''}${imgSrc}`}
-                alt="Foto SIM" 
+              <img
+                src={
+                  imgSrc.startsWith("http") ||
+                  imgSrc.startsWith("blob:") ||
+                  imgSrc.startsWith("data:")
+                    ? imgSrc
+                    : `${import.meta.env.VITE_API_URL || ""}${imgSrc}`
+                }
+                alt="Foto SIM"
                 className="w-full h-auto object-contain"
               />
             </div>
           );
         }
-        
+
         // Handle jika value adalah string (dari server)
         return (
           <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
-            <img 
-              src={typeof value === 'string' && (value.startsWith('http') || value.startsWith('blob:') || value.startsWith('data:')) 
-                ? value 
-                : `${import.meta.env.VITE_API_URL || ''}${value}`}
-              alt="Foto SIM" 
+            <img
+              src={
+                typeof value === "string" &&
+                (value.startsWith("http") ||
+                  value.startsWith("blob:") ||
+                  value.startsWith("data:"))
+                  ? value
+                  : `${import.meta.env.VITE_API_URL || ""}${value}`
+              }
+              alt="Foto SIM"
               className="w-full h-auto object-contain"
             />
           </div>
@@ -339,19 +354,46 @@ const SIM = () => {
     },
   ];
 
+  // Fungsi untuk menangani error dari CRUDManager
+  const handleError = (error) => {
+    setErrorMessage(error);
+    // Scroll ke atas halaman agar notifikasi error terlihat
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <CRUDManager
-      title="Data SIM"
-      description="Kelola data Surat Izin Mengemudi"
-      service={simService}
-      columns={columns}
-      formFields={formFields}
-      initialFormData={initialFormData}
-      validationRules={validationRules}
-      searchPlaceholder="Cari nomor SIM, nama, atau NIK..."
-      filterOptions={filterOptions}
-      icon="🚗"
-    />
+    <div className="space-y-4">
+      {/* Notifikasi Error yang lebih terlihat */}
+      {errorMessage && (
+        <div className="error-container sticky top-4 z-50 mx-auto max-w-4xl shadow-lg">
+          <div className="flex items-center">
+            <span className="error-icon text-xl">⚠️</span>
+            <h3 className="error-title">Terjadi Kesalahan</h3>
+            <button 
+              className="ml-auto text-red-700 hover:text-red-900" 
+              onClick={() => setErrorMessage(null)}
+            >
+              ✕
+            </button>
+          </div>
+          <p className="error-message">{errorMessage}</p>
+        </div>
+      )}
+
+      <CRUDManager
+        title="Data SIM"
+        description="Kelola data Surat Izin Mengemudi"
+        service={simService}
+        columns={columns}
+        formFields={formFields}
+        initialFormData={initialFormData}
+        validationRules={validationRules}
+        searchPlaceholder="Cari nomor SIM, nama, atau NIK..."
+        filterOptions={filterOptions}
+        icon="🚗"
+        onError={handleError}
+      />
+    </div>
   );
 };
 

@@ -15,8 +15,11 @@ const Login = () => {
   const from = location.state?.from?.pathname || "/";
 
   useEffect(() => {
-    clearError();
-  }, [clearError]);
+    // Gunakan fungsi clearError tanpa dependency untuk menghindari infinite loop
+    if (error) {
+      clearError();
+    }
+  }, [clearError, error]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -43,11 +46,33 @@ const Login = () => {
     }
 
     try {
-      await login(email, password);
-      // Redirect to dashboard after successful login
-      window.location.href = "/dashboard";
+      // Tambahkan timeout untuk mengatasi masalah koneksi yang lambat
+      const loginPromise = login(email, password);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Waktu koneksi habis. Server mungkin sedang tidak tersedia.')), 10000)
+      );
+      
+      // Race antara login dan timeout
+      const response = await Promise.race([loginPromise, timeoutPromise]);
+      
+      if (response && response.success) {
+        // Redirect to dashboard after successful login
+        window.location.href = "/dashboard";
+      }
     } catch (error) {
       console.error("Login error:", error);
+      // Tangani error secara manual jika terjadi error 500 atau koneksi
+      if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+        setErrors({
+          form: "Server mengalami masalah internal. Silakan coba lagi nanti."
+        });
+      } else if (error.message.includes('koneksi') || error.message.includes('terhubung') || 
+                error.message.includes('Failed to fetch') || error.message.includes('timeout')) {
+        setErrors({
+          form: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda atau coba lagi nanti."
+        });
+      }
+      // Error lainnya sudah ditangani di AuthContext
     }
   };
 
@@ -77,14 +102,17 @@ const Login = () => {
           {/* Login Form */}
           <div className="bg-white">
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {error && (
-                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-                  <div className="flex">
+              {(error || errors.form) && (
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-lg shadow-sm animate-pulse">
+                  <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <span className="text-red-400">⚠️</span>
+                      <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
                     </div>
                     <div className="ml-3">
-                      <p className="text-sm text-red-800">{error}</p>
+                      <h3 className="text-sm font-medium text-red-800">Gagal Masuk</h3>
+                      <p className="text-sm text-red-700 mt-1">{errors.form || error}</p>
                     </div>
                   </div>
                 </div>

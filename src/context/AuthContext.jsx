@@ -43,6 +43,22 @@ const authReducer = (state, action) => {
       return { ...state, error: null };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
+    case "REGISTER_START":
+      return { ...state, loading: true, error: null };
+    case "REGISTER_SUCCESS":
+      return {
+        ...state,
+        loading: false,
+        isAuthenticated: true,
+        user: action.payload.user,
+        error: null,
+      };
+    case "REGISTER_ERROR":
+      return {
+        ...state,
+        loading: false,
+        error: action.payload,
+      };
     default:
       return state;
   }
@@ -90,7 +106,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       dispatch({
         type: "LOGIN_ERROR",
-        payload: error.message,
+        payload: error.response?.data?.message || error.message,
       });
       throw error;
     }

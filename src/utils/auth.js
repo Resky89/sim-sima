@@ -1,39 +1,42 @@
 // Authentication utilities
-const TOKEN_KEY = 'sima_access_token';
-const REFRESH_TOKEN_KEY = 'sima_refresh_token';
 const USER_KEY = 'sima_user';
-const CSRF_TOKEN_KEY = 'sima_csrf_token';
+
+// Fungsi untuk mendapatkan cookies berdasarkan nama
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
+// Fungsi untuk menghapus cookie
+const deleteCookie = (name) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+};
 
 export const getToken = () => {
-  return localStorage.getItem(TOKEN_KEY);
+  // Access token tidak disimpan di cookies karena sudah ada di memory aplikasi
+  // Kita hanya perlu menyimpan user data di localStorage
+  return sessionStorage.getItem('access_token');
 };
 
 export const setToken = (token) => {
-  localStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem('access_token', token);
 };
 
 export const getRefreshToken = () => {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
-};
-
-export const setRefreshToken = (token) => {
-  localStorage.setItem(REFRESH_TOKEN_KEY, token);
+  // Refresh token disimpan di httpOnly cookie oleh backend
+  // Frontend tidak perlu mengakses refresh token secara langsung
+  return null;
 };
 
 export const getCsrfToken = () => {
-  return localStorage.getItem(CSRF_TOKEN_KEY);
+  // CSRF token disimpan di cookie oleh backend
+  return getCookie('csrf-token');
 };
 
-export const setCsrfToken = (token) => {
-  localStorage.setItem(CSRF_TOKEN_KEY, token);
-};
-
-export const setTokens = (accessToken, refreshToken, csrfToken) => {
-  localStorage.setItem(TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  if (csrfToken) {
-    localStorage.setItem(CSRF_TOKEN_KEY, csrfToken);
-  }
+export const setTokens = (accessToken) => {
+  sessionStorage.setItem('access_token', accessToken);
 };
 
 export const getUser = () => {
@@ -46,10 +49,11 @@ export const setUser = (user) => {
 };
 
 export const removeToken = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
-  localStorage.removeItem(CSRF_TOKEN_KEY);
+  sessionStorage.removeItem('access_token');
   localStorage.removeItem(USER_KEY);
+  // Hapus cookies yang mungkin ada
+  deleteCookie('refresh_token');
+  deleteCookie('csrf-token');
 };
 
 export const isAuthenticated = () => {

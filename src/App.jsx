@@ -13,11 +13,23 @@ import Profile from "./pages/Profile";
 import Users from "./pages/Users";
 import KTP from "./pages/KTP";
 import SIM from "./pages/SIM";
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
+        <Toaster 
+          position="top-center"
+          reverseOrder={false}
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route

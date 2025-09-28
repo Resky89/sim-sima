@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { getErrorMessage } from "../utils/errorHandler";
 import { getCsrfToken } from "../utils/auth";
 
@@ -112,21 +113,21 @@ export const useCRUD = ({
             if (Object.keys(errorObj).length > 0) {
               setFormErrors(errorObj);
             } else {
-              setError("Gagal memuat data: " + JSON.stringify(response.errors));
+              toast.error("Gagal memuat data: " + JSON.stringify(response.errors));
             }
           } else {
             // Error berupa string
-            setError(response.errors);
+            toast.error(response.errors);
           }
         } else {
-          setError(`Gagal memuat data dari ${methodName}`);
+          toast.error(`Gagal memuat data dari ${methodName}`);
         }
         setData([]);
       }
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       console.error(`Error in loadData: ${errorMessage}`, error);
-      setError(errorMessage);
+      toast.error(errorMessage);
       setData([]);
     } finally {
       setLoading(false);
@@ -345,14 +346,14 @@ export const useCRUD = ({
             if (Object.keys(errorObj).length > 0) {
               setFormErrors(errorObj);
             } else {
-              setError("Gagal menyimpan data: " + JSON.stringify(response.errors));
+              toast.error("Gagal menyimpan data: " + JSON.stringify(response.errors));
             }
           } else {
             // Error berupa string
-            setError(response.errors);
+            toast.error(response.errors);
           }
         } else {
-          setError("Gagal menyimpan data");
+          toast.error("Gagal menyimpan data");
         }
       }
     } catch (error) {
@@ -377,16 +378,16 @@ export const useCRUD = ({
             if (Object.keys(errorObj).length > 0) {
               setFormErrors(errorObj);
             } else {
-              setError(errorMessage);
+              toast.error(errorMessage);
             }
           } else {
-            setError(responseData.errors || errorMessage);
+            toast.error(responseData.errors || errorMessage);
           }
         } else {
-          setError(errorMessage);
+          toast.error(errorMessage);
         }
       } else {
-        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setSubmitting(false);
@@ -409,10 +410,10 @@ export const useCRUD = ({
         closeModal('delete');
         await loadData();
       } else {
-        setError(response.errors || "Gagal menghapus data");
+        toast.error(response.errors || "Gagal menghapus data");
       }
     } catch (error) {
-      setError(getErrorMessage(error));
+      toast.error(getErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -435,7 +436,7 @@ export const useCRUD = ({
   const handleSearch = (search) => {
     // Validasi input pencarian
     if (search && typeof search === 'string' && search.length > 100) {
-      setError("Kata kunci pencarian tidak boleh lebih dari 100 karakter");
+      toast.error("Kata kunci pencarian tidak boleh lebih dari 100 karakter");
       return;
     }
     
@@ -445,7 +446,7 @@ export const useCRUD = ({
     try {
       loadData(newParams);
     } catch (error) {
-      setError(getErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -455,23 +456,23 @@ export const useCRUD = ({
     if (filters && typeof filters === 'object') {
       // Validasi sort_by dan sort_order jika ada
       if (filters.sort_by && !['created_at', 'updated_at', 'full_name', 'email', 'nik', 'nomor_sim'].includes(filters.sort_by)) {
-        setError("Field sorting tidak valid");
+        toast.error("Field sorting tidak valid");
         return;
       }
       
       if (filters.sort_order && !['asc', 'desc'].includes(filters.sort_order)) {
-        setError("Urutan sorting tidak valid");
+        toast.error("Urutan sorting tidak valid");
         return;
       }
       
       // Validasi page dan limit
       if (filters.page && (isNaN(filters.page) || filters.page < 1)) {
-        setError("Nomor halaman tidak valid");
+        toast.error("Nomor halaman tidak valid");
         return;
       }
       
       if (filters.limit && (isNaN(filters.limit) || filters.limit < 1 || filters.limit > 100)) {
-        setError("Jumlah data per halaman tidak valid");
+        toast.error("Jumlah data per halaman tidak valid");
         return;
       }
     }
@@ -482,7 +483,7 @@ export const useCRUD = ({
     try {
       loadData(newParams);
     } catch (error) {
-      setError(getErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 

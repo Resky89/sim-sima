@@ -1,5 +1,5 @@
 import { API_CONFIG } from '../config/api.js';
-import { getToken, removeToken, getRefreshToken, setToken } from '../utils/auth.js';
+import { getToken, removeToken, getCsrfToken, setToken } from '../utils/auth.js';
 import { getErrorMessage } from '../utils/errorHandler.js';
 
 class HttpClient {
@@ -22,18 +22,15 @@ class HttpClient {
 
   // Refresh access token using refresh token
   async refreshAccessToken() {
-    const refreshToken = getRefreshToken();
-    
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
     try {
+      // Refresh token sekarang disimpan di httpOnly cookie
+      // Kita tidak perlu mengirimkannya secara manual
       const response = await fetch(`${this.baseURL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        credentials: 'include', // Penting: untuk mengirim cookies
       });
 
       const data = await response.json();
@@ -66,12 +63,24 @@ class HttpClient {
     let token = getToken();
     
     const makeRequest = async (accessToken) => {
+      // Tambahkan CSRF token untuk operasi mutasi (POST, PUT, DELETE)
+      const method = options.method || 'GET';
+      const needsCsrfToken = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
+      
+      // Skip CSRF token untuk endpoint login
+      const isLoginEndpoint = endpoint === API_CONFIG.ENDPOINTS.AUTH.LOGIN;
+      
+      // Dapatkan CSRF token dari cookie jika diperlukan
+      const csrfToken = needsCsrfToken && !isLoginEndpoint ? getCsrfToken() : null;
+      
       const config = {
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
           ...options.headers
         },
+        credentials: 'include', // Penting: untuk mengirim cookies
         ...options
       };
 

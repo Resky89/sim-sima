@@ -1,5 +1,6 @@
 import { API_CONFIG } from '../config/api.js';
-import { getToken, removeToken, getCsrfToken, setToken } from '../utils/auth.js';
+import { store } from '../redux/store';
+import { setCredentials, logOut } from '../redux/authSlice';
 import { getErrorMessage } from '../utils/errorHandler.js';
 
 class HttpClient {
@@ -23,65 +24,62 @@ class HttpClient {
   // Refresh access token using refresh token
   async refreshAccessToken() {
     try {
-      // Refresh token sekarang disimpan di httpOnly cookie
-      // Kita tidak perlu mengirimkannya secara manual
       const response = await fetch(`${this.baseURL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Penting: untuk mengirim cookies
+        credentials: 'include',
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // If refresh token is also expired, logout user
-        if (response.status === 401) {
-          removeToken();
-          window.location.href = '/login';
-          throw new Error('Session expired');
-        }
-        throw new Error(data.errors || data.message || 'Token refresh failed');
+        throw new Error(data.errors || 'Session expired');
       }
 
-      if (data.success && data.data.tokens.access_token) {
-        setToken(data.data.tokens.access_token);
+      if (data.success && data.data.tokens) {
+        const { user } = store.getState().auth; // Ambil user yang ada dari state
+        store.dispatch(setCredentials({ ...data.data.tokens, user }));
         return data.data.tokens.access_token;
       }
 
       throw new Error('Invalid token response');
     } catch (error) {
-      removeToken();
-      window.location.href = '/login';
+      // Jika refresh gagal total, dispatch logout
+      store.dispatch(logOut());
       throw error;
     }
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    let token = getToken();
+    const { accessToken, csrfToken } = store.getState().auth;
     
-    const makeRequest = async (accessToken) => {
+    const makeRequest = async (token) => {
       // Tambahkan CSRF token untuk operasi mutasi (POST, PUT, DELETE)
       const method = options.method || 'GET';
       const needsCsrfToken = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
       
-      // Skip CSRF token untuk endpoint login
-      const isLoginEndpoint = endpoint === API_CONFIG.ENDPOINTS.AUTH.LOGIN;
+      // Skip CSRF token untuk endpoint login, logout, dan refresh
+      const isAuthEndpoint = endpoint === API_CONFIG.ENDPOINTS.AUTH.LOGIN || 
+                             endpoint === API_CONFIG.ENDPOINTS.AUTH.LOGOUT || 
+                             endpoint === API_CONFIG.ENDPOINTS.AUTH.REFRESH;
       
-      // Dapatkan CSRF token dari cookie jika diperlukan
-      const csrfToken = needsCsrfToken && !isLoginEndpoint ? getCsrfToken() : null;
+      const currentCsrfToken = needsCsrfToken && !isAuthEndpoint ? store.getState().auth.csrfToken : null;
       
+      const { headers: optionHeaders, ...restOptions } = options;
+
       const config = {
         headers: {
+          // Content-Type akan di-override oleh headers dari post/put jika diperlukan
           'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-          ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
-          ...options.headers
+          ...optionHeaders,
+          ...(token && { Authorization: `Bearer ${token}` }),
+          ...(currentCsrfToken && { 'X-CSRF-Token': currentCsrfToken }),
         },
         credentials: 'include', // Penting: untuk mengirim cookies
-        ...options
+        ...restOptions,
       };
 
       const response = await fetch(url, config);
@@ -98,10 +96,10 @@ class HttpClient {
     };
 
     try {
-      return await makeRequest(token);
+      return await makeRequest(accessToken);
     } catch (error) {
       // If token expired, try to refresh it
-      if (error.status === 401 && token && !this.isRefreshing) {
+      if (error.status === 401 && accessToken && !this.isRefreshing) {
         if (this.isRefreshing) {
           // If refresh is in progress, queue this request
           return new Promise((resolve, reject) => {
@@ -121,9 +119,7 @@ class HttpClient {
           return await makeRequest(newToken);
         } catch (refreshError) {
           this.isRefreshing = false;
-          // If refresh fails, logout user
-          removeToken();
-          window.location.href = '/login';
+          // store.dispatch(logOut()) sudah dipanggil di dalam refreshAccessToken, jadi kita hanya perlu melempar error.
           throw refreshError;
         }
       }
@@ -147,24 +143,32 @@ class HttpClient {
   }
 
   post(endpoint, data = {}) {
+    const isFormData = data instanceof FormData;
+    const body = isFormData ? data : JSON.stringify(data);
+    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+
     return this.request(endpoint, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body,
+      headers,
     });
   }
 
-  put(endpoint, data, headers = {}) {
+  put(endpoint, data) {
+    const isFormData = data instanceof FormData;
+    const body = isFormData ? data : JSON.stringify(data);
+    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+
     return this.request(endpoint, {
       method: 'PUT',
-      body: JSON.stringify(data),
-      headers
+      body,
+      headers,
     });
   }
 
-  delete(endpoint, headers = {}) {
+  delete(endpoint) {
     return this.request(endpoint, { 
       method: 'DELETE',
-      headers 
     });
   }
 }

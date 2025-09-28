@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useAuth } from "../../hooks/useAuth.jsx";
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../redux/authSlice';
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user } = useAuth();
+  const user = useSelector(selectCurrentUser);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 overflow-hidden">

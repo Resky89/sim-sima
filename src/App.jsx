@@ -1,91 +1,66 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext.jsx";
-import ProtectedRoute from "./components/common/ProtectedRoute";
-import Layout from "./components/common/Layout";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import Users from "./pages/Users";
-import KTP from "./pages/KTP";
-import SIM from "./pages/SIM";
-import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { authService } from './services/authService';
+import { selectIsAuthLoading, setLoading } from './redux/authSlice';
+import { store } from './redux/store';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import GuestRoute from './components/common/GuestRoute';
+import LoginPage from './pages/Login.jsx';
+import DashboardPage from './pages/Dashboard.jsx';
+import KTPListPage from './pages/KTP.jsx';
+import SIMListPage from './pages/SIM.jsx';
+import UserListPage from './pages/Users.jsx';
+import ProfilePage from './pages/Profile.jsx';
 
 function App() {
+  const dispatch = useDispatch();
+  const isLoading = useSelector(selectIsAuthLoading);
+
+  useEffect(() => {
+    const validateSession = async () => {
+      const token = store.getState().auth.accessToken;
+      if (token) {
+        try {
+          await authService.getProfile();
+        } catch (error) {
+          console.error("Session validation failed on app load:", error.message);
+        } finally {
+          if (store.getState().auth.loading) {
+            dispatch(setLoading(false));
+          }
+        }
+      } else {
+        dispatch(setLoading(false));
+      }
+    };
+
+    validateSession();
+  }, [dispatch]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-xl font-semibold">Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <AuthProvider>
-      <Router>
-        <Toaster 
-          position="top-center"
-          reverseOrder={false}
-          toastOptions={{
-            duration: 5000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Profile />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/users"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Users />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/ktp"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <KTP />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sim"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SIM />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <Routes>
+      <Route path="/" element={<ProtectedRoute />}>
+        <Route index element={<DashboardPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="ktp" element={<KTPListPage />} />
+        <Route path="sim" element={<SIMListPage />} /> 
+        <Route path="users" element={<UserListPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+      </Route>
+
+      <Route path="/" element={<GuestRoute />}>
+        <Route path="login" element={<LoginPage />} />
+      </Route>
+    </Routes>
   );
 }
 

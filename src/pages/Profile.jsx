@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../hooks/useAuth.jsx";
+import { useSelector, useDispatch } from 'react-redux';
+import { selectCurrentUser, setCredentials } from '../redux/authSlice';
 import { authService } from "../services/authService";
 import { userService } from "../services/userService";
 import { getErrorMessage } from "../utils/errorHandler";
@@ -8,7 +9,8 @@ import Input from "../components/ui/Input";
 import Modal from "../components/ui/Modal";
 
 const Profile = () => {
-  const { user, setUser } = useAuth();
+  const user = useSelector(selectCurrentUser);
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
@@ -40,8 +42,8 @@ const Profile = () => {
     try {
       setLoading(true);
       setError("");
-      const userData = await authService.getProfile();
-      setUser(userData);
+      // authService.getProfile() akan secara otomatis memperbarui Redux store
+      await authService.getProfile(); 
     } catch (error) {
       setError(getErrorMessage(error));
     } finally {
@@ -60,7 +62,8 @@ const Profile = () => {
       const response = await userService.update(user.user_id, editForm);
 
       if (response.success) {
-        setUser(response.data);
+        // authService.getProfile() akan memperbarui store dengan data terbaru
+        await authService.getProfile();
         setSuccess("Profil berhasil diperbarui");
         setShowEditModal(false);
         setTimeout(() => setSuccess(""), 3000);

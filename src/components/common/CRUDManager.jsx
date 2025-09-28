@@ -36,7 +36,6 @@ const CRUDManager = ({
     realTimeValidation,
     openModal,
     closeModal,
-    // setFormData,
     setRealTimeValidation,
     handleSubmit,
     handleDelete,
@@ -172,7 +171,6 @@ const CRUDManager = ({
               handleFormChange(field, value);
             }}
             onSubmit={(data) => {
-              // Aktifkan real-time validation saat submit
               setRealTimeValidation(true);
               handleSubmit(data);
             }}
@@ -204,7 +202,6 @@ const CRUDManager = ({
               handleFormChange(field, value);
             }}
             onSubmit={(data) => {
-              // Aktifkan real-time validation saat submit
               setRealTimeValidation(true);
               handleSubmit(data);
             }}

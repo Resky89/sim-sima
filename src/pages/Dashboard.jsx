@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth.jsx";
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../redux/authSlice';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const user = useSelector(selectCurrentUser);
   const [stats, setStats] = useState({
     users: 0,
     ktp: 0,

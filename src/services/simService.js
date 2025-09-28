@@ -18,16 +18,16 @@ export const simService = {
     return await httpClient.get(API_CONFIG.ENDPOINTS.SIM.BY_ID(simId));
   },
 
-  async create(simData, headers) {
-    return await httpClient.post(API_CONFIG.ENDPOINTS.SIM.BASE, simData, headers);
+  async create(simData) {
+    return await httpClient.post(API_CONFIG.ENDPOINTS.SIM.BASE, simData);
   },
 
-  async update(simId, simData, headers) {
-    return await httpClient.put(API_CONFIG.ENDPOINTS.SIM.BY_ID(simId), simData, headers);
+  async update(simId, simData) {
+    return await httpClient.put(API_CONFIG.ENDPOINTS.SIM.BY_ID(simId), simData);
   },
 
-  async delete(simId, headers) {
-    return await httpClient.delete(API_CONFIG.ENDPOINTS.SIM.BY_ID(simId), headers);
+  async delete(simId) {
+    return await httpClient.delete(API_CONFIG.ENDPOINTS.SIM.BY_ID(simId));
   },
 
   // Legacy methods for backward compatibility

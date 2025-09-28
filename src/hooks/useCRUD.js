@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { getErrorMessage } from "../utils/errorHandler";
-import { getCsrfToken } from "../utils/auth";
 
 export const useCRUD = ({
   service,
@@ -140,6 +139,7 @@ export const useCRUD = ({
 
   // Modal handlers
   const openModal = (type, item = null) => {
+    console.log(`[DEBUG] Opening modal: ${type}`, { item }); // <-- LOGGING DITAMBAHKAN
     setModals(prev => ({ ...prev, [type]: true }));
     if (item) {
       setSelectedItem(item);
@@ -313,16 +313,12 @@ export const useCRUD = ({
         });
       }
 
-      // Mendapatkan CSRF token untuk operasi yang membutuhkan proteksi CSRF
-      const csrfToken = getCsrfToken();
-      const headers = csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : undefined;
-      
       let response;
       if (modals.create) {
-        response = await service.create(dataToSend, headers);
+        response = await service.create(dataToSend);
       } else {
         const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id;
-        response = await service.update(itemId, dataToSend, headers);
+        response = await service.update(itemId, dataToSend);
       }
 
       if (response.success) {
@@ -399,12 +395,8 @@ export const useCRUD = ({
       setSubmitting(true);
       setError("");
 
-      // Mendapatkan CSRF token untuk operasi delete
-      const csrfToken = getCsrfToken();
-      const headers = csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : undefined;
-
       const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id;
-      const response = await service.delete(itemId, headers);
+      const response = await service.delete(itemId);
 
       if (response.success) {
         closeModal('delete');

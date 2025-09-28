@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth.jsx";
+import { useDispatch } from 'react-redux';
+import { authService } from '../../services/authService';
 
 const navigation = [
   {
@@ -41,11 +42,11 @@ const navigation = [
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
-  const { logout } = useAuth();
+  const dispatch = useDispatch();
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await authService.logout();
     } catch (error) {
       console.error("Logout error:", error);
     }

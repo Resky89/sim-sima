@@ -18,16 +18,16 @@ export const userService = {
     return await httpClient.get(API_CONFIG.ENDPOINTS.USERS.BY_ID(userId));
   },
 
-  async create(userData, headers) {
-    return await httpClient.post(API_CONFIG.ENDPOINTS.USERS.BASE, userData, headers);
+  async create(userData) {
+    return await httpClient.post(API_CONFIG.ENDPOINTS.USERS.BASE, userData);
   },
 
-  async update(userId, userData, headers) {
-    return await httpClient.put(API_CONFIG.ENDPOINTS.USERS.BY_ID(userId), userData, headers);
+  async update(userId, userData) {
+    return await httpClient.put(API_CONFIG.ENDPOINTS.USERS.BY_ID(userId), userData);
   },
 
-  async delete(userId, headers) {
-    return await httpClient.delete(API_CONFIG.ENDPOINTS.USERS.BY_ID(userId), headers);
+  async delete(userId) {
+    return await httpClient.delete(API_CONFIG.ENDPOINTS.USERS.BY_ID(userId));
   },
 
   // Legacy methods for backward compatibility

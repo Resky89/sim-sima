@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth.jsx";
+import { useDispatch, useSelector } from 'react-redux';
+import { authService } from '../services/authService';
+import { selectIsAuthenticated, selectIsAuthLoading } from '../redux/authSlice';
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 
@@ -9,17 +11,11 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
 
-  const { login, isAuthenticated, loading, error, clearError } = useAuth();
+  const dispatch = useDispatch();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const loading = useSelector(selectIsAuthLoading);
   const location = useLocation();
-
   const from = location.state?.from?.pathname || "/";
-
-  useEffect(() => {
-    // Gunakan fungsi clearError tanpa dependency untuk menghindari infinite loop
-    if (error) {
-      clearError();
-    }
-  }, [clearError, error]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -46,33 +42,10 @@ const Login = () => {
     }
 
     try {
-      // Tambahkan timeout untuk mengatasi masalah koneksi yang lambat
-      const loginPromise = login(email, password);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Waktu koneksi habis. Server mungkin sedang tidak tersedia.')), 10000)
-      );
-      
-      // Race antara login dan timeout
-      const response = await Promise.race([loginPromise, timeoutPromise]);
-      
-      if (response && response.success) {
-        // Redirect to dashboard after successful login
-        window.location.href = "/dashboard";
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      // Tangani error secara manual jika terjadi error 500 atau koneksi
-      if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
-        setErrors({
-          form: "Server mengalami masalah internal. Silakan coba lagi nanti."
-        });
-      } else if (error.message.includes('koneksi') || error.message.includes('terhubung') || 
-                error.message.includes('Failed to fetch') || error.message.includes('timeout')) {
-        setErrors({
-          form: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda atau coba lagi nanti."
-        });
-      }
-      // Error lainnya sudah ditangani di AuthContext
+      await authService.login(email, password);
+      // Navigasi akan ditangani oleh GuestRoute secara otomatis
+    } catch (err) {
+      setErrors({ form: err.response?.data?.errors || err.message || 'Login gagal' });
     }
   };
 
@@ -102,7 +75,7 @@ const Login = () => {
           {/* Login Form */}
           <div className="bg-white">
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {(error || errors.form) && (
+              {errors.form && (
                 <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-lg shadow-sm animate-pulse">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
@@ -112,7 +85,7 @@ const Login = () => {
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-red-800">Gagal Masuk</h3>
-                      <p className="text-sm text-red-700 mt-1">{errors.form || error}</p>
+                      <p className="text-sm text-red-700 mt-1">{errors.form}</p>
                     </div>
                   </div>
                 </div>

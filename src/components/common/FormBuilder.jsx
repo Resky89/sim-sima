@@ -82,7 +82,7 @@ const FormBuilder = ({
       ...fieldProps
     } = field;
 
-    const fieldValue = formData[name] || "";
+    const fieldValue = formData[name] ?? "";
     const fieldError = fieldErrors[name];
 
     const commonProps = {
@@ -97,27 +97,29 @@ const FormBuilder = ({
 
     switch (type) {
       case "select":
-        return (
-          <Select
-            key={name}
-            {...commonProps}
-            options={options}
-            placeholder={placeholder || `Pilih ${label}`}
-            onChange={(e) => {
-              // Konversi nilai ke boolean jika opsi adalah boolean
-              const isBoolean = options.some(opt => typeof opt.value === "boolean");
-              let value = e.target.value;
-              
-              // Konversi string "true"/"false" ke boolean jika field memiliki opsi boolean
-              if (isBoolean) {
-                if (value === "true") value = true;
-                if (value === "false") value = false;
-              }
-              
-              handleFieldChange(name, value);
-            }}
-          />
-        );
+        {
+          const isBoolean = options.some(opt => typeof opt.value === "boolean");
+          const selectedValue = isBoolean
+            ? (fieldValue === true ? "true" : fieldValue === false ? "false" : "")
+            : fieldValue;
+          return (
+            <Select
+              key={name}
+              {...commonProps}
+              options={options}
+              placeholder={placeholder || `Pilih ${label}`}
+              value={selectedValue}
+              onChange={(e) => {
+                let value = e.target.value;
+                if (isBoolean) {
+                  if (value === "true") value = true;
+                  if (value === "false") value = false;
+                }
+                handleFieldChange(name, value);
+              }}
+            />
+          );
+        }
 
       case "textarea":
         return (

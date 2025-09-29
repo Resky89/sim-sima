@@ -40,6 +40,11 @@ const KTP = () => {
       ),
     },
     {
+      key: "nama_lengkap",
+      title: "Nama",
+      render: (value) => <div className="text-gray-900">{value}</div>,
+    },
+    {
       key: "alamat",
       title: "Alamat",
       render: (value) => (
@@ -325,31 +330,6 @@ const KTP = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Additional Information */}
-            <div className="mt-4 bg-gray-50 p-3 rounded-md">
-              <h4 className="font-semibold mb-2">Informasi Tambahan:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="font-medium">No. Pengajuan:</span> {selectedKTP.no_pengajuan}
-                </div>
-                <div>
-                  <span className="font-medium">Status:</span> {selectedKTP.status}
-                </div>
-                <div>
-                  <span className="font-medium">Tanggal Pengajuan:</span> {new Date(selectedKTP.tanggal_pengajuan).toLocaleString('id-ID')}
-                </div>
-                <div>
-                  <span className="font-medium">Tanggal Selesai:</span> {new Date(selectedKTP.tanggal_selesai).toLocaleString('id-ID')}
-                </div>
-                <div>
-                  <span className="font-medium">No. Telepon:</span> {selectedKTP.no_telepon}
-                </div>
-                <div>
-                  <span className="font-medium">Kode Pos:</span> {selectedKTP.kode_pos}
                 </div>
               </div>
             </div>

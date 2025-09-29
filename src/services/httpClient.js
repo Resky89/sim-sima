@@ -32,16 +32,22 @@ class HttpClient {
         credentials: 'include',
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.errors || 'Session expired');
+        const err = new Error((data && (data.errors || data.message)) || 'Session expired');
+        err.status = response.status;
+        throw err;
       }
 
-      if (data.success && data.data.tokens) {
-        const { user } = store.getState().auth; // Ambil user yang ada dari state
-        store.dispatch(setCredentials({ ...data.data.tokens, user }));
-        return data.data.tokens.access_token;
+      // Normalize tokens shape from server
+      const tokens = data?.data?.tokens || data?.tokens || data;
+      if (tokens) {
+        const { user } = store.getState().auth; // Ambil user dari state
+        const accessToken = tokens.accessToken || tokens.access_token;
+        const csrfToken = tokens.csrfToken || tokens.csrf_token;
+        store.dispatch(setCredentials({ user, accessToken, csrfToken }));
+        return accessToken;
       }
 
       throw new Error('Invalid token response');
@@ -69,11 +75,12 @@ class HttpClient {
       const currentCsrfToken = needsCsrfToken && !isAuthEndpoint ? store.getState().auth.csrfToken : null;
       
       const { headers: optionHeaders, ...restOptions } = options;
+      const isFormDataBody = restOptions && restOptions.body instanceof FormData;
 
       const config = {
         headers: {
-          // Content-Type akan di-override oleh headers dari post/put jika diperlukan
-          'Content-Type': 'application/json',
+          // Set Content-Type hanya jika bukan FormData
+          ...(isFormDataBody ? {} : { 'Content-Type': 'application/json' }),
           ...optionHeaders,
           ...(token && { Authorization: `Bearer ${token}` }),
           ...(currentCsrfToken && { 'X-CSRF-Token': currentCsrfToken }),
@@ -98,8 +105,10 @@ class HttpClient {
     try {
       return await makeRequest(accessToken);
     } catch (error) {
-      // If token expired, try to refresh it
-      if (error.status === 401 && accessToken && !this.isRefreshing) {
+      // If token expired or unauthorized, try to refresh it
+      const status = error.status || error.response?.status;
+      const shouldRefresh = [401, 403, 419].includes(status);
+      if (shouldRefresh) {
         if (this.isRefreshing) {
           // If refresh is in progress, queue this request
           return new Promise((resolve, reject) => {
@@ -112,9 +121,8 @@ class HttpClient {
         try {
           this.isRefreshing = true;
           const newToken = await this.refreshAccessToken();
-          this.onRefreshed(newToken);
           this.isRefreshing = false;
-          
+          this.onRefreshed(newToken);
           // Retry the original request with new token
           return await makeRequest(newToken);
         } catch (refreshError) {

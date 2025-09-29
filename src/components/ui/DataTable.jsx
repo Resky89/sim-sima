@@ -51,41 +51,61 @@ const DataTable = ({
     return pages;
   };
 
+  const showHeader = Boolean(onSearch) || (filterOptions && filterOptions.length > 0) || Boolean(actions);
+
   return (
     <div
       className={`bg-white rounded-xl shadow-sm border border-gray-200 ${className}`}
     >
       {/* Header with Search and Filters */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex-1 w-full sm:w-auto">
-            <Input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="max-w-md"
-            />
-          </div>
-
-          {filterOptions.length > 0 && (
-            <div className="flex gap-3 flex-wrap">
-              {filterOptions.map((filter) => (
-                <Select
-                  key={filter.key}
-                  options={filter.options}
-                  placeholder={filter.placeholder}
-                  value={filterValues[filter.key] || ""}
-                  onChange={(e) => handleFilter(filter.key, e.target.value)}
-                  className="min-w-[150px]"
+      {showHeader && (
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex-1 w-full sm:w-auto">
+              {onSearch && (
+                <Input
+                  type="text"
+                  placeholder={searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="max-w-md"
                 />
-              ))}
+              )}
             </div>
-          )}
 
-          {actions && <div className="flex gap-2">{actions}</div>}
+            {filterOptions.length > 0 && (
+              <div className="flex gap-3 flex-wrap">
+                {filterOptions.map((filter) => {
+                  const isBoolean = Array.isArray(filter.options) && filter.options.some(opt => typeof opt.value === "boolean");
+                  const currentVal = filterValues[filter.key];
+                  const selectValue = (currentVal ?? "") === ""
+                    ? ""
+                    : (isBoolean ? String(currentVal) : currentVal);
+                  return (
+                    <Select
+                      key={filter.key}
+                      options={filter.options}
+                      placeholder={filter.placeholder}
+                      value={selectValue}
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        if (isBoolean) {
+                          if (value === "true") value = true;
+                          if (value === "false") value = false;
+                        }
+                        handleFilter(filter.key, value);
+                      }}
+                      className="min-w-[150px]"
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {actions && <div className="flex gap-2">{actions}</div>}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto">

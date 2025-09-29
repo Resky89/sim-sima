@@ -22,6 +22,8 @@ const CRUDManager = ({
   sortOrder = "desc",
   icon = "📊",
   headerActions = [],
+  onFormChange,
+  renderView,
 }) => {
   const {
     data,
@@ -45,6 +47,7 @@ const CRUDManager = ({
     handleFilter,
     handleFormChange,
     validateField,
+    setFormData,
   } = useCRUD({
     service,
     initialFormData,
@@ -169,6 +172,15 @@ const CRUDManager = ({
             errors={formErrors}
             onChange={(field, value) => {
               handleFormChange(field, value);
+              // Callback kustom dari parent untuk menangani perubahan form (misal autofill berdasarkan NIK)
+              if (typeof onFormChange === "function") {
+                try {
+                  onFormChange({ field, value, formData, setFormData, modals });
+                } catch (e) {
+                  // swallow errors to avoid breaking form interactions
+                  console.error("onFormChange error:", e);
+                }
+              }
             }}
             onSubmit={(data) => {
               setRealTimeValidation(true);
@@ -200,6 +212,15 @@ const CRUDManager = ({
             errors={formErrors}
             onChange={(field, value) => {
               handleFormChange(field, value);
+              // Callback kustom dari parent untuk menangani perubahan form (misal autofill berdasarkan NIK)
+              if (typeof onFormChange === "function") {
+                try {
+                  onFormChange({ field, value, formData, setFormData, modals });
+                } catch (e) {
+                  // swallow errors to avoid breaking form interactions
+                  console.error("onFormChange error:", e);
+                }
+              }
             }}
             onSubmit={(data) => {
               setRealTimeValidation(true);
@@ -226,28 +247,34 @@ const CRUDManager = ({
       >
         <div className="bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl p-6">
           {selectedItem && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {formFields.map((field) => (
-                  <div
-                    key={field.name}
-                    className={`flex flex-col space-y-2 ${
-                      field.type === "textarea" || field.fullWidth
-                        ? "md:col-span-2"
-                        : ""
-                    }`}
-                  >
-                    <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center">
-                      {field.icon && <span className="mr-2">{field.icon}</span>}
-                      {field.label}
-                    </label>
-                    <div className="text-gray-900 bg-white px-4 py-3 rounded-lg border border-gray-200 shadow-sm min-h-[44px] flex items-start">
-                      {renderFieldValue(field, selectedItem[field.name])}
-                    </div>
-                  </div>
-                ))}
+            renderView ? (
+              <div className="">
+                {renderView(selectedItem)}
               </div>
-            </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {formFields.map((field) => (
+                    <div
+                      key={field.name}
+                      className={`flex flex-col space-y-2 ${
+                        field.type === "textarea" || field.fullWidth
+                          ? "md:col-span-2"
+                          : ""
+                      }`}
+                    >
+                      <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center">
+                        {field.icon && <span className="mr-2">{field.icon}</span>}
+                        {field.label}
+                      </label>
+                      <div className="text-gray-900 bg-white px-4 py-3 rounded-lg border border-gray-200 shadow-sm min-h-[44px] flex items-start">
+                        {renderFieldValue(field, selectedItem[field.name])}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
           )}
         </div>
       </Modal>

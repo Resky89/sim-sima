@@ -1,7 +1,7 @@
 import CRUDManager from "../components/common/CRUDManager";
 import { simService } from "../services/simService";
 import { ktpService } from "../services/ktpService";
-import { SIM_ENUMS } from "../constants/enums.jsx";
+import { SIM_ENUMS, KTP_ENUMS } from "../constants/enums.jsx";
 import { useState, useEffect } from "react";
 import "../styles/error.css";
 
@@ -70,12 +70,43 @@ const SIM = () => {
     return digits.replace(/(.{4})/g, "$1-").replace(/-$/, "");
   };
 
+  // Normalize key: lowercased, remove spaces and underscores
+  const normalizeJenisSimKey = (val) =>
+    (val ?? "")
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_]/g, "");
+
   const getJenisSimText = (value) => {
-    const found = SIM_ENUMS.JENIS_SIM.find((i) => i.value === value);
-    return found?.label || (value ? String(value).toUpperCase() : "-");
+    const key = normalizeJenisSimKey(value);
+    const found = SIM_ENUMS.JENIS_SIM.find(
+      (i) => normalizeJenisSimKey(i.value) === key
+    );
+    return found?.label || (value ? getJenisSimCode(value) : "-");
   };
 
-  const getJenisSimCode = (value) => (value ? String(value).toUpperCase() : "-");
+  const getJenisSimCode = (value) => {
+    const key = normalizeJenisSimKey(value);
+    const map = {
+      a: "A",
+      aumum: "A UMUM",
+      bi: "B I",
+      biumum: "B I UMUM",
+      bii: "B II",
+      biiumum: "B II UMUM",
+      c: "C",
+      ci: "C I",
+      cii: "C II",
+      d: "D",
+      di: "D I",
+      b1: "B I",
+      b2: "B II",
+      c1: "C I",
+      c2: "C II",
+    };
+    return map[key] || (value ? String(value).toUpperCase() : "-");
+  };
 
   const getGenderText = (val) => {
     if (!val) return "-";
@@ -95,27 +126,37 @@ const SIM = () => {
 
   // Vehicle info mapping per jenis SIM
   const getVehicleInfo = (jenis) => {
-    const key = (jenis || "").toString().toLowerCase();
+    const key = normalizeJenisSimKey(jenis);
     if (key === "c") return { icon: "🏍️", vehicle: "Motor", ccInfo: "≤ 250 cc" };
-    if (key === "c1") return { icon: "🏍️", vehicle: "Motor", ccInfo: "250–500 cc" };
-    if (key === "c2") return { icon: "🏍️", vehicle: "Motor", ccInfo: "≥ 500 cc" };
-    if (key === "b1") return { icon: "🚚", vehicle: "Kendaraan Barang/Bus (B1)", ccInfo: null };
-    if (key === "b2") return { icon: "🚛", vehicle: "Kendaraan Berat (B2)", ccInfo: null };
-    if (key === "d") return { icon: "♿", vehicle: "Khusus Disabilitas", ccInfo: null };
+    if (key === "ci" || key === "c1") return { icon: "🏍️", vehicle: "Motor", ccInfo: "250–500 cc" };
+    if (key === "cii" || key === "c2") return { icon: "🏍️", vehicle: "Motor", ccInfo: "≥ 500 cc" };
+    if (key === "bi" || key === "b1" || key === "biumum") return { icon: "🚚", vehicle: "Kendaraan Barang/Bus (B I)", ccInfo: null };
+    if (key === "bii" || key === "b2" || key === "biiumum") return { icon: "🚛", vehicle: "Kendaraan Berat (B II)", ccInfo: null };
+    if (key === "d" || key === "di") return { icon: "♿", vehicle: "Khusus Disabilitas", ccInfo: null };
+    // default A / A Umum
     return { icon: "🚗", vehicle: "Mobil (A)", ccInfo: null };
   };
 
   // Badge color classes per jenis SIM
   const getSimBadgeClasses = (jenis) => {
-    const key = (jenis || "").toString().toLowerCase();
+    const key = normalizeJenisSimKey(jenis);
     const map = {
       a: "bg-emerald-100 text-emerald-800 border-emerald-200",
+      aumum: "bg-emerald-100 text-emerald-800 border-emerald-200",
+      bi: "bg-orange-100 text-orange-800 border-orange-200",
+      biumum: "bg-orange-100 text-orange-800 border-orange-200",
+      bii: "bg-red-100 text-red-800 border-red-200",
+      biiumum: "bg-red-100 text-red-800 border-red-200",
+      c: "bg-blue-100 text-blue-800 border-blue-200",
+      ci: "bg-purple-100 text-purple-800 border-purple-200",
+      cii: "bg-indigo-100 text-indigo-800 border-indigo-200",
+      d: "bg-gray-200 text-gray-800 border-gray-300",
+      di: "bg-gray-200 text-gray-800 border-gray-300",
+      // backward compatibility
       b1: "bg-orange-100 text-orange-800 border-orange-200",
       b2: "bg-red-100 text-red-800 border-red-200",
-      c: "bg-blue-100 text-blue-800 border-blue-200",
       c1: "bg-purple-100 text-purple-800 border-purple-200",
       c2: "bg-indigo-100 text-indigo-800 border-indigo-200",
-      d: "bg-gray-200 text-gray-800 border-gray-300",
     };
     return map[key] || "bg-slate-100 text-slate-800 border-slate-200";
   };
@@ -271,12 +312,13 @@ const SIM = () => {
       key: "jenis_sim",
       title: "Jenis SIM",
       render: (value) => {
+        const v = normalizeJenisSimKey(value);
         const jenisSim = SIM_ENUMS.JENIS_SIM.find(
-          (item) => item.value === value
+          (item) => normalizeJenisSimKey(item.value) === v
         );
         return (
           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getSimBadgeClasses(value)}`}>
-            {jenisSim ? jenisSim.label : value}
+            {jenisSim ? jenisSim.label : getJenisSimCode(value)}
           </span>
         );
       },
@@ -439,7 +481,7 @@ const SIM = () => {
       key: "jenis_kelamin",
       label: "Jenis Kelamin",
       placeholder: "Filter Jenis Kelamin",
-      options: SIM_ENUMS.JENIS_KELAMIN,
+      options: KTP_ENUMS.JENIS_KELAMIN,
     },
   ];
 

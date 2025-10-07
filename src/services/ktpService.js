@@ -11,6 +11,7 @@ export const ktpService = {
       limit: 10,
       sort_by: 'created_at',
       sort_order: 'desc',
+      status: 'selesai',
       ...params
     };
     

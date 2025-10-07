@@ -67,9 +67,8 @@ class HttpClient {
       const method = options.method || 'GET';
       const needsCsrfToken = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
       
-      // Skip CSRF token untuk endpoint login, logout, dan refresh
+      // Skip CSRF token untuk endpoint login dan refresh SAJA (logout tetap butuh CSRF)
       const isAuthEndpoint = endpoint === API_CONFIG.ENDPOINTS.AUTH.LOGIN || 
-                             endpoint === API_CONFIG.ENDPOINTS.AUTH.LOGOUT || 
                              endpoint === API_CONFIG.ENDPOINTS.AUTH.REFRESH;
       
       const currentCsrfToken = needsCsrfToken && !isAuthEndpoint ? store.getState().auth.csrfToken : null;
@@ -108,7 +107,9 @@ class HttpClient {
       // If token expired or unauthorized, try to refresh it
       const status = error.status || error.response?.status;
       const shouldRefresh = [401, 403, 419].includes(status);
-      if (shouldRefresh) {
+      // Jangan pernah refresh saat request adalah endpoint LOGIN
+      const isLoginRequest = endpoint === API_CONFIG.ENDPOINTS.AUTH.LOGIN;
+      if (shouldRefresh && !isLoginRequest) {
         if (this.isRefreshing) {
           // If refresh is in progress, queue this request
           return new Promise((resolve, reject) => {

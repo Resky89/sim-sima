@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { authService } from './services/authService';
-import { selectIsAuthLoading, setLoading } from './redux/authSlice';
+import { selectIsAuthLoading, setLoading, logOut } from './redux/authSlice';
 import { store } from './redux/store';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import GuestRoute from './components/common/GuestRoute';
@@ -25,6 +25,7 @@ function App() {
           await authService.getProfile();
         } catch (error) {
           console.error("Session validation failed on app load:", error.message);
+          dispatch(logOut());
         } finally {
           if (store.getState().auth.loading) {
             dispatch(setLoading(false));

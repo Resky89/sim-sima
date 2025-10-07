@@ -23,7 +23,10 @@ const CRUDManager = ({
   icon = "📊",
   headerActions = [],
   onFormChange,
+  onBeforeSubmit,
   renderView,
+  renderCreateExtra,
+  renderEditExtra,
 }) => {
   const {
     data,
@@ -53,6 +56,7 @@ const CRUDManager = ({
     initialFormData,
     validationRules,
     onDataTransform,
+    onBeforeSubmit,
     pageSize,
     sortBy,
     sortOrder,
@@ -166,8 +170,13 @@ const CRUDManager = ({
         size="lg"
       >
         <div className="bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl p-6">
+          {typeof renderCreateExtra === "function" && (
+            <div className="mb-4">
+              {renderCreateExtra({ formData, setFormData, modals, selectedItem })}
+            </div>
+          )}
           <FormBuilder
-            fields={formFields}
+            fields={typeof formFields === "function" ? formFields({ formData, modals, mode: "create" }) : formFields}
             data={formData}
             errors={formErrors}
             onChange={(field, value) => {
@@ -206,8 +215,13 @@ const CRUDManager = ({
         size="lg"
       >
         <div className="bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl p-6">
+          {typeof renderEditExtra === "function" && (
+            <div className="mb-4">
+              {renderEditExtra({ formData, setFormData, modals, selectedItem })}
+            </div>
+          )}
           <FormBuilder
-            fields={formFields}
+            fields={typeof formFields === "function" ? formFields({ formData, modals, mode: "edit" }) : formFields}
             data={formData}
             errors={formErrors}
             onChange={(field, value) => {

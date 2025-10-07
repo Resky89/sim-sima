@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../redux/authSlice';
+import { userService } from '../services/userService';
+import { simService } from '../services/simService';
+import { ktpService } from '../services/ktpService';
 
 const Dashboard = () => {
   const user = useSelector(selectCurrentUser);
@@ -13,13 +16,30 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    // Simulate loading stats - bisa diganti dengan API calls nanti
-    setStats({
-      users: 25,
-      ktp: 150,
-      sim: 89,
-      loading: false,
-    });
+    const fetchStats = async () => {
+      setStats((prev) => ({ ...prev, loading: true }));
+      try {
+        const [usersRes, ktpRes, simRes] = await Promise.all([
+          userService.getUsers({ page: 1, limit: 1 }),
+          ktpService.getAllKTP(),
+          simService.getSIMList({ page: 1, limit: 1 }),
+        ]);
+
+        // Users & SIM: ambil dari pagination.total_items
+        const usersTotal = usersRes?.pagination?.total_items ?? usersRes?.data?.pagination?.total_items ?? 0;
+        const simTotal = simRes?.pagination?.total_items ?? simRes?.data?.pagination?.total_items ?? 0;
+
+        // KTP: total berada di level root dari endpoint Get All
+        const ktpTotal = typeof ktpRes?.total === 'number' ? ktpRes.total : 0;
+
+        setStats({ users: usersTotal, ktp: ktpTotal, sim: simTotal, loading: false });
+      } catch (e) {
+        console.error('Failed to load dashboard stats:', e);
+        setStats((prev) => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchStats();
   }, []);
 
   const getCurrentTime = () => {
@@ -131,52 +151,12 @@ const Dashboard = () => {
             color="blue"
           />
           <QuickAction
-            title="Input Data KTP"
-            description="Tambahkan data KTP baru"
-            icon="📄"
-            link="/ktp"
-            color="purple"
-          />
-          <QuickAction
             title="Input Data SIM"
             description="Tambahkan data SIM baru"
             icon="🚙"
             link="/sim"
             color="orange"
           />
-        </div>
-      </div>
-
-      {/* System Information */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Informasi Sistem
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-            <div className="text-lg mb-1">🔐</div>
-            <div className="text-xs font-medium text-gray-700">
-              Keamanan Tinggi
-            </div>
-          </div>
-          <div className="text-center p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100">
-            <div className="text-lg mb-1">🔍</div>
-            <div className="text-xs font-medium text-gray-700">
-              Pencarian Cepat
-            </div>
-          </div>
-          <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border border-purple-100">
-            <div className="text-lg mb-1">📊</div>
-            <div className="text-xs font-medium text-gray-700">
-              Dashboard Interaktif
-            </div>
-          </div>
-          <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border border-orange-100">
-            <div className="text-lg mb-1">⚡</div>
-            <div className="text-xs font-medium text-gray-700">
-              Performa Tinggi
-            </div>
-          </div>
         </div>
       </div>
     </div>

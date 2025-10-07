@@ -311,6 +311,21 @@ const FormBuilder = ({
                 </p>
               </div>
             </div>
+
+            {field.allowText && (
+              <div className="mt-3">
+                <Input
+                  key={`${name}-text`}
+                  label="Path Gambar (opsional)"
+                  type="text"
+                  placeholder={field.textPlaceholder || `Contoh: /uploads/sim/foto.jpg`}
+                  value={typeof fieldValue === 'string' ? fieldValue : ''}
+                  onChange={(e) => handleFieldChange(name, e.target.value)}
+                  disabled={disabled || loading}
+                />
+              </div>
+            )}
+
             {fieldError && (
               <p className="mt-1 text-sm text-red-600">{fieldError}</p>
             )}

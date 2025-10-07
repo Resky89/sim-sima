@@ -7,6 +7,7 @@ export const useCRUD = ({
   initialFormData = {},
   validationRules = {},
   onDataTransform = (data) => data,
+  onBeforeSubmit = (data) => data,
   pageSize = 10,
   sortBy = "created_at",
   sortOrder = "desc",
@@ -258,7 +259,10 @@ export const useCRUD = ({
 
       // Persiapkan data untuk dikirim ke server
       // Jika ada file, gunakan FormData
-      const hasFileInput = Object.values(formData).some(
+      // Beri kesempatan parent untuk memproses/menormalisasi data sebelum submit (mis. ubah File -> path)
+      const processedForm = typeof onBeforeSubmit === 'function' ? onBeforeSubmit(formData, { isCreate: modals.create, selectedItem }) : formData;
+
+      const hasFileInput = Object.values(processedForm).some(
         value => value instanceof File || 
                 (typeof value === 'object' && value !== null && 
                  (value.type?.includes('image/') || value.name?.match(/\.(jpg|jpeg|png|gif|svg)$/i)))
@@ -270,8 +274,8 @@ export const useCRUD = ({
         dataToSend = new FormData();
         
         // Tambahkan semua field ke FormData
-        Object.keys(formData).forEach(key => {
-          const value = formData[key];
+        Object.keys(processedForm).forEach(key => {
+          const value = processedForm[key];
           
           // Skip empty values
           if (value === "" || value === null || value === undefined) {
@@ -305,10 +309,10 @@ export const useCRUD = ({
       } else {
         // Gunakan object biasa jika tidak ada file
         dataToSend = {};
-        Object.keys(formData).forEach(key => {
+        Object.keys(processedForm).forEach(key => {
           // Include field only if it has a value (not empty string, null, or undefined)
-          if (formData[key] !== "" && formData[key] !== null && formData[key] !== undefined) {
-            dataToSend[key] = formData[key];
+          if (processedForm[key] !== "" && processedForm[key] !== null && processedForm[key] !== undefined) {
+            dataToSend[key] = processedForm[key];
           }
         });
       }

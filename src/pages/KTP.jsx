@@ -145,12 +145,14 @@ const KTP = () => {
       });
       
       if (response.success) {
-        setData(response.data);
-        setPagination({
-          page: 1,
-          limit: response.total || 10,
-          total_items: response.total || 0,
-          total_pages: Math.ceil((response.total || 0) / 10),
+        const items = Array.isArray(response.data) ? response.data : [];
+        const totalItems = (typeof response.total === 'number' ? response.total : items.length) || 0;
+        setData(items);
+        setPagination((prev) => {
+          const limit = prev.limit || 10;
+          const total_pages = Math.max(1, Math.ceil(totalItems / limit));
+          const page = Math.min(prev.page || 1, total_pages);
+          return { ...prev, page, limit, total_items: totalItems, total_pages };
         });
         setError(null);
       } else {
@@ -223,19 +225,16 @@ const KTP = () => {
 
       {!loading && !error && (
         <DataTable
-          data={data}
+          data={pageData}
           columns={columns}
           pagination={{
-            page: pagination.page,
+            current_page: pagination.page,
             limit: pagination.limit,
             total_items: pagination.total_items,
             total_pages: pagination.total_pages,
-            onPageChange: handlePageChange,
-            onLimitChange: handleLimitChange,
           }}
-          onSort={handleSort}
-          sortBy={searchParams.sort_by}
-          sortOrder={searchParams.sort_order}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
           emptyMessage="Tidak ada data KTP yang ditemukan"
         />
       )}
@@ -254,80 +253,78 @@ const KTP = () => {
         ) : selectedKTP ? (
           <div className="p-2">
             {/* KTP Card Design */}
-            <div className="border-2 border-gray-300 rounded-md p-4 bg-blue-50 max-w-3xl mx-auto">
-              <div className="flex flex-col md:flex-row">
-                <div className="flex-grow">
-                  {/* Header */}
-                  <div className="text-center mb-4">
-                    <h2 className="font-bold text-lg">PROVINSI {selectedKTP.provinsi}</h2>
-                    <h3 className="font-bold">KABUPATEN {selectedKTP.kabupaten}</h3>
+            <div className="relative mx-auto w-full max-w-3xl rounded-xl shadow-lg border border-sky-300 overflow-hidden">
+              <div
+                className="p-4 md:p-6"
+                style={{
+                  backgroundColor: '#b3e5fc',
+                  backgroundImage:
+                    'radial-gradient(circle at 20% 20%, rgba(255,255,255,.5), rgba(255,255,255,0) 40%), radial-gradient(circle at 80% 30%, rgba(255,255,255,.35), rgba(255,255,255,0) 35%), repeating-linear-gradient(45deg, rgba(13,110,253,.08) 0px, rgba(13,110,253,.08) 4px, rgba(255,255,255,.08) 4px, rgba(255,255,255,.08) 8px)'
+                }}
+              >
+                {/* Header */}
+                <div className="text-center mb-4">
+                  <div className="text-[11px] font-semibold tracking-widest text-blue-900">REPUBLIK INDONESIA</div>
+                  <h2 className="font-extrabold text-lg md:text-xl text-blue-900 uppercase">PROVINSI {selectedKTP.provinsi || '-'}</h2>
+                  <h3 className="font-bold text-sm md:text-base text-blue-900 uppercase">KABUPATEN {selectedKTP.kabupaten || '-'}</h3>
+                </div>
+                
+                {/* KTP Content */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="md:col-span-2">
+                    <div className="mb-2 font-semibold text-blue-900">
+                      <span className="mr-2">NIK</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-mono tracking-widest text-gray-900">{selectedKTP.nik}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-y-1 text-[13px] md:text-sm text-gray-900">
+                      <div className="font-semibold">Nama</div>
+                      <div className="col-span-2">: {selectedKTP.nama_lengkap}</div>
+                      <div className="font-semibold">Tempat/Tgl Lahir</div>
+                      <div className="col-span-2">: {selectedKTP.tempat_lahir}, {new Date(selectedKTP.tanggal_lahir).toLocaleDateString('id-ID')}</div>
+                      <div className="font-semibold">Jenis Kelamin</div>
+                      <div className="col-span-2 flex flex-wrap items-baseline">
+                        <span className="mr-2">: {selectedKTP.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}</span>
+                        <span className="ml-4 font-semibold">Gol. Darah</span>
+                        <span className="ml-2">{selectedKTP.golongan_darah || '-'}</span>
+                      </div>
+                      <div className="font-semibold">Alamat</div>
+                      <div className="col-span-2">: {selectedKTP.alamat}</div>
+                      <div className="font-semibold">RT/RW</div>
+                      <div className="col-span-2">: {selectedKTP.rt}/{selectedKTP.rw}</div>
+                      <div className="font-semibold">Kel/Desa</div>
+                      <div className="col-span-2">: {selectedKTP.kelurahan}</div>
+                      <div className="font-semibold">Kecamatan</div>
+                      <div className="col-span-2">: {selectedKTP.kecamatan}</div>
+                      <div className="font-semibold">Agama</div>
+                      <div className="col-span-2">: {selectedKTP.agama}</div>
+                      <div className="font-semibold">Status Perkawinan</div>
+                      <div className="col-span-2">: {selectedKTP.status_perkawinan}</div>
+                      <div className="font-semibold">Pekerjaan</div>
+                      <div className="col-span-2">: {selectedKTP.pekerjaan}</div>
+                      <div className="font-semibold">Kewarganegaraan</div>
+                      <div className="col-span-2">: {selectedKTP.kewarganegaraan}</div>
+                      <div className="font-semibold">Berlaku Hingga</div>
+                      <div className="col-span-2">: SEUMUR HIDUP</div>
+                    </div>
                   </div>
                   
-                  {/* KTP Content */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <div className="col-span-2">
-                      <div className="grid grid-cols-3 gap-1 text-sm">
-                        <div className="font-semibold">NIK</div>
-                        <div className="col-span-2">: {selectedKTP.nik}</div>
-                        
-                        <div className="font-semibold">Nama</div>
-                        <div className="col-span-2">: {selectedKTP.nama_lengkap}</div>
-                        
-                        <div className="font-semibold">Tempat/Tgl Lahir</div>
-                        <div className="col-span-2">: {selectedKTP.tempat_lahir}, {new Date(selectedKTP.tanggal_lahir).toLocaleDateString('id-ID')}</div>
-                        
-                        <div className="font-semibold">Jenis Kelamin</div>
-                        <div className="col-span-2">: {selectedKTP.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}</div>
-                        
-                        <div className="font-semibold">Gol Darah</div>
-                        <div className="col-span-2">: {selectedKTP.golongan_darah}</div>
-                        
-                        <div className="font-semibold">Alamat</div>
-                        <div className="col-span-2">: {selectedKTP.alamat}</div>
-                        
-                        <div className="font-semibold">RT/RW</div>
-                        <div className="col-span-2">: {selectedKTP.rt}/{selectedKTP.rw}</div>
-                        
-                        <div className="font-semibold">Kel/Desa</div>
-                        <div className="col-span-2">: {selectedKTP.kelurahan}</div>
-                        
-                        <div className="font-semibold">Kecamatan</div>
-                        <div className="col-span-2">: {selectedKTP.kecamatan}</div>
-                        
-                        <div className="font-semibold">Agama</div>
-                        <div className="col-span-2">: {selectedKTP.agama}</div>
-                        
-                        <div className="font-semibold">Status Perkawinan</div>
-                        <div className="col-span-2">: {selectedKTP.status_perkawinan}</div>
-                        
-                        <div className="font-semibold">Pekerjaan</div>
-                        <div className="col-span-2">: {selectedKTP.pekerjaan}</div>
-                        
-                        <div className="font-semibold">Kewarganegaraan</div>
-                        <div className="col-span-2">: {selectedKTP.kewarganegaraan}</div>
-                        
-                        <div className="font-semibold">Berlaku Hingga</div>
-                        <div className="col-span-2">: SEUMUR HIDUP</div>
-                      </div>
+                  {/* Photo Area */}
+                  <div className="md:col-span-1 flex flex-col items-center justify-start">
+                    <div className="h-40 w-32 bg-white border-2 border-sky-400 shadow-inner overflow-hidden flex items-center justify-center mb-2">
+                      {selectedKTP.pas_foto_path ? (
+                        <img 
+                          src={selectedKTP.pas_foto_path} 
+                          alt="Foto KTP" 
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-gray-400 text-xs text-center">Foto tidak tersedia</div>
+                      )}
                     </div>
-                    
-                    {/* Photo Area */}
-                    <div className="flex flex-col items-center justify-start">
-                      <div className="border border-gray-400 h-40 w-32 flex items-center justify-center bg-white mb-2">
-                        {selectedKTP.pas_foto_path ? (
-                          <img 
-                            src={selectedKTP.pas_foto_path} 
-                            alt="Foto KTP" 
-                            className="max-h-full max-w-full"
-                          />
-                        ) : (
-                          <div className="text-gray-400 text-xs text-center">Foto tidak tersedia</div>
-                        )}
-                      </div>
-                      <div className="text-center mt-2 border-t border-gray-300 pt-2 w-full">
-                        <div className="text-xs mb-1">{selectedKTP.kabupaten}, {new Date(selectedKTP.tanggal_selesai).toLocaleDateString('id-ID')}</div>
-                        <div className="font-semibold text-sm">KEPALA DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL</div>
-                      </div>
+                    <div className="text-center mt-2 border-t border-gray-300 pt-2 w-full">
+                      <div className="text-xs mb-1">{selectedKTP.kabupaten}, {new Date(selectedKTP.tanggal_selesai).toLocaleDateString('id-ID')}</div>
+                      <div className="font-semibold text-[11px] leading-4">KEPALA DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL</div>
                     </div>
                   </div>
                 </div>

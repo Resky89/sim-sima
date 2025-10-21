@@ -21,6 +21,12 @@ const DataTable = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterValues, setFilterValues] = useState({});
 
+  // Normalize pagination values to be resilient across different shapes
+  const currentPage = pagination.current_page ?? pagination.page ?? 1;
+  const totalPages = pagination.total_pages ?? 1;
+  const limit = pagination.limit ?? 10;
+  const totalItems = pagination.total_items ?? data.length ?? 0;
+
   const handleSearch = (value) => {
     setSearchTerm(value);
     onSearch?.(value);
@@ -33,12 +39,11 @@ const DataTable = ({
   };
 
   const getPageNumbers = () => {
-    const { current_page = 1, total_pages = 1 } = pagination;
     const pages = [];
     const maxVisible = 5;
 
-    let start = Math.max(1, current_page - Math.floor(maxVisible / 2));
-    let end = Math.min(total_pages, start + maxVisible - 1);
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
 
     if (end - start + 1 < maxVisible) {
       start = Math.max(1, end - maxVisible + 1);
@@ -173,20 +178,20 @@ const DataTable = ({
       </div>
 
       {/* Pagination */}
-      {pagination.total_pages > 1 && (
+      {(totalItems > 0 || typeof onLimitChange === 'function') && (
         <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
           <div className="flex-1 flex justify-between sm:hidden">
             <Button
               variant="outline"
-              disabled={pagination.current_page === 1}
-              onClick={() => onPageChange?.(pagination.current_page - 1)}
+              disabled={currentPage === 1}
+              onClick={() => onPageChange?.(currentPage - 1)}
             >
               Sebelumnya
             </Button>
             <Button
               variant="outline"
-              disabled={pagination.current_page === pagination.total_pages}
-              onClick={() => onPageChange?.(pagination.current_page + 1)}
+              disabled={currentPage === totalPages}
+              onClick={() => onPageChange?.(currentPage + 1)}
             >
               Selanjutnya
             </Button>
@@ -197,28 +202,26 @@ const DataTable = ({
               <p className="text-sm text-gray-700">
                 Menampilkan{" "}
                 <span className="font-medium">
-                  {(pagination.current_page - 1) * pagination.limit + 1}
+                  {(currentPage - 1) * limit + (totalItems > 0 ? 1 : 0)}
                 </span>{" "}
                 sampai{" "}
                 <span className="font-medium">
-                  {Math.min(
-                    pagination.current_page * pagination.limit,
-                    pagination.total_items
-                  )}
+                  {Math.min(currentPage * limit, totalItems)}
                 </span>{" "}
                 dari{" "}
-                <span className="font-medium">{pagination.total_items}</span>{" "}
+                <span className="font-medium">{totalItems}</span>{" "}
                 data
               </p>
 
               <div className="flex items-center space-x-2">
                 <label className="text-sm text-gray-700">Per halaman:</label>
                 <select
-                  value={pagination.limit}
+                  value={limit}
                   onChange={(e) => onLimitChange?.(parseInt(e.target.value))}
                   className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value={10}>10</option>
+                  <option value={20}>20</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
@@ -227,10 +230,11 @@ const DataTable = ({
             </div>
 
             <div>
+              {totalPages > 1 && (
               <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                 <button
-                  onClick={() => onPageChange?.(pagination.current_page - 1)}
-                  disabled={pagination.current_page === 1}
+                  onClick={() => onPageChange?.(currentPage - 1)}
+                  disabled={currentPage === 1}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Sebelumnya
@@ -241,7 +245,7 @@ const DataTable = ({
                     key={page}
                     onClick={() => onPageChange?.(page)}
                     className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                      page === pagination.current_page
+                      page === currentPage
                         ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
                         : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                     }`}
@@ -251,13 +255,14 @@ const DataTable = ({
                 ))}
 
                 <button
-                  onClick={() => onPageChange?.(pagination.current_page + 1)}
-                  disabled={pagination.current_page === pagination.total_pages}
+                  onClick={() => onPageChange?.(currentPage + 1)}
+                  disabled={currentPage === totalPages}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Selanjutnya
                 </button>
               </nav>
+              )}
             </div>
           </div>
         </div>

@@ -327,6 +327,8 @@ export const useCRUD = ({
 
       if (response.success) {
         closeModal(modals.create ? 'create' : 'edit');
+        const successMsg = response.message || (modals.create ? 'Berhasil menambahkan data' : 'Berhasil memperbarui data');
+        toast.success(successMsg);
         await loadData();
       } else {
         // Handling error dari backend
@@ -404,6 +406,7 @@ export const useCRUD = ({
 
       if (response.success) {
         closeModal('delete');
+        toast.success(response.message || 'Berhasil menghapus data');
         await loadData();
       } else {
         toast.error(response.errors || "Gagal menghapus data");

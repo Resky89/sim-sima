@@ -11,13 +11,6 @@ const navigation = [
     description: "Ringkasan sistem",
   },
   {
-    name: "Profil",
-    href: "/profile",
-    icon: "👤",
-    color: "from-indigo-500 to-purple-600",
-    description: "Profil pengguna",
-  },
-  {
     name: "Admin",
     href: "/users",
     icon: "👥",

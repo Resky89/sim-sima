@@ -1,4 +1,8 @@
+import { useNavigate } from "react-router-dom";
+
 const Header = ({ user, onMenuClick }) => {
+  const navigate = useNavigate();
+  const handleAvatarClick = () => navigate('/profile');
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-30 lg:left-80">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -27,7 +31,7 @@ const Header = ({ user, onMenuClick }) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 cursor-pointer" onClick={handleAvatarClick}>
               <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center shadow-md">
                 <span className="text-sm font-medium text-white">
                   {user?.full_name?.charAt(0).toUpperCase() || "U"}

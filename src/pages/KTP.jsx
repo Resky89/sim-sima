@@ -196,6 +196,13 @@ const KTP = () => {
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
+  const pageData = Array.isArray(data)
+    ? data.slice(
+        Math.max(0, ((pagination.page || 1) - 1) * (pagination.limit || 10)),
+        Math.max(0, ((pagination.page || 1) - 1) * (pagination.limit || 10)) + (pagination.limit || 10)
+      )
+    : [];
+
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="mb-6">

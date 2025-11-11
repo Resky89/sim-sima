@@ -188,7 +188,8 @@ const SIM = () => {
     const nomorSim = formatNomorSim(item.nomor_sim);
     const jenisSimCode = getJenisSimCode(item.jenis_sim);
     const jenisSimText = getJenisSimText(item.jenis_sim);
-    const ttl = [item.tempat_lahir, formatDateID(item.tanggal_lahir)].filter(Boolean).join(", ");
+    const tglLahirText = formatDateID(item.tanggal_lahir);
+    const ttl = [item.tempat_lahir, tglLahirText !== "-" ? tglLahirText : ""].filter(Boolean).join(", ");
     const golKel = `${getGolDarahText(item.gol_darah)} - ${getGenderText(item.jenis_kelamin)}`;
     const pekerjaan = item.pekerjaan || "-";
     const alamat = formatAlamat(item);
@@ -215,9 +216,9 @@ const SIM = () => {
 
           {/* Body */}
           <div className="relative bg-gray-50 p-4 sm:p-6">
-            {/* Nomor SIM */}
-            <div className="absolute right-4 top-4 text-gray-800 font-mono font-semibold text-sm sm:text-base">
-              {nomorSim}
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-xs sm:text-sm text-gray-600">No. SIM</div>
+              <div className="font-mono font-semibold text-gray-800 text-sm sm:text-base">{nomorSim}</div>
             </div>
 
             <div className="grid grid-cols-3 gap-4 sm:gap-6">
@@ -234,13 +235,13 @@ const SIM = () => {
 
               {/* Details list */}
               <div className="col-span-2">
-                <ol className="space-y-2 text-gray-900 text-sm sm:text-base font-semibold">
-                  <li className="flex"><span className="w-6">1.</span><span className="flex-1">{item.full_name || "-"}</span></li>
-                  <li className="flex"><span className="w-6">2.</span><span className="flex-1">{item.nik || "-"}</span></li>
-                  <li className="flex"><span className="w-6">3.</span><span className="flex-1">{golKel}</span></li>
-                  <li className="flex"><span className="w-6">4.</span><span className="flex-1">{ttl}</span></li>
-                  <li className="flex"><span className="w-6">5.</span><span className="flex-1">{pekerjaan}</span></li>
-                  <li className="flex"><span className="w-6">6.</span><span className="flex-1">{alamat}</span></li>
+                <ol className="space-y-1.5 text-gray-900 text-sm sm:text-base">
+                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">1.</span><span className="font-semibold">{item.full_name || "-"}</span></li>
+                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">2.</span><span className="font-medium font-mono">{item.nik || "-"}</span></li>
+                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">3.</span><span className="font-medium">{golKel}</span></li>
+                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">4.</span><span className="font-medium">{ttl}</span></li>
+                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">5.</span><span className="font-medium capitalize">{pekerjaan}</span></li>
+                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">6.</span><span className="font-medium">{alamat}</span></li>
                 </ol>
               </div>
             </div>

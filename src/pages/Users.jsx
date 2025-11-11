@@ -152,14 +152,14 @@ const Users = () => {
       )}
 
       <CRUDManager
-        title="Pengguna"
-        description="Kelola data pengguna sistem"
+        title="Admin"
+        description="Kelola data admin sistem"
         service={userService}
         columns={columns}
         formFields={formFields}
         initialFormData={initialFormData}
         validationRules={validationRules}
-        searchPlaceholder="Cari nama atau email pengguna..."
+        searchPlaceholder="Cari nama atau email admin..."
         filterOptions={filterOptions}
         icon="👥"
         onError={handleError}

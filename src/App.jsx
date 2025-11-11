@@ -10,6 +10,7 @@ import LoginPage from './pages/Login.jsx';
 import DashboardPage from './pages/Dashboard.jsx';
 import KTPListPage from './pages/KTP.jsx';
 import SIMListPage from './pages/SIM.jsx';
+import SatpasListPage from './pages/Satpas.jsx';
 import UserListPage from './pages/Users.jsx';
 import ProfilePage from './pages/Profile.jsx';
 
@@ -54,6 +55,7 @@ function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="ktp" element={<KTPListPage />} />
         <Route path="sim" element={<SIMListPage />} /> 
+        <Route path="satpas" element={<SatpasListPage />} />
         <Route path="users" element={<UserListPage />} />
         <Route path="profile" element={<ProfilePage />} />
       </Route>

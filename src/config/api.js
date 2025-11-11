@@ -3,14 +3,14 @@ export const API_CONFIG = {
   BASE_URL: 'http://localhost:8026',
   ENDPOINTS: {
     AUTH: {
-      LOGIN: '/api/auth/login',
-      LOGOUT: '/api/auth/logout',
-      REFRESH: '/api/auth/refresh',
-      ME: '/api/auth/me'
+      LOGIN: '/api/auth/admin/login',
+      LOGOUT: '/api/auth/admin/logout',
+      REFRESH: '/api/auth/admin/refresh',
+      ME: '/api/auth/admin/me'
     },
     USERS: {
-      BASE: '/api/users',
-      BY_ID: (id) => `/api/users/${id}`
+      BASE: '/api/admin',
+      BY_ID: (id) => `/api/admin/${id}`
     },
     KTP: {
       BASE: '/api/ktp',
@@ -19,6 +19,10 @@ export const API_CONFIG = {
     SIM: {
       BASE: '/api/sim',
       BY_ID: (id) => `/api/sim/${id}`
+    },
+    SATPAS: {
+      BASE: '/api/satpas',
+      BY_ID: (id) => `/api/satpas/${id}`
     }
   },
   DEFAULT_PAGINATION: {

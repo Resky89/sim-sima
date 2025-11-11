@@ -18,11 +18,11 @@ const navigation = [
     description: "Profil pengguna",
   },
   {
-    name: "Pengguna",
+    name: "Admin",
     href: "/users",
     icon: "👥",
     color: "from-emerald-500 to-teal-600",
-    description: "Kelola pengguna",
+    description: "Kelola admin",
   },
   {
     name: "Data KTP",
@@ -37,6 +37,13 @@ const navigation = [
     icon: "🚗",
     color: "from-orange-500 to-red-600",
     description: "Kelola SIM",
+  },
+  {
+    name: "Data Satpas",
+    href: "/satpas",
+    icon: "🏢",
+    color: "from-cyan-500 to-blue-600",
+    description: "Kelola Satpas",
   },
 ];
 

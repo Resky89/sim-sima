@@ -32,6 +32,13 @@ const navigation = [
     description: "Kelola SIM",
   },
   {
+    name: "Pendaftaran SIM",
+    href: "/pendaftaran",
+    icon: "📝",
+    color: "from-blue-500 to-cyan-600",
+    description: "Kelola pendaftaran SIM",
+  },
+  {
     name: "Data Satpas",
     href: "/satpas",
     icon: "🏢",

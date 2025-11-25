@@ -27,6 +27,10 @@ const CRUDManager = ({
   renderView,
   renderCreateExtra,
   renderEditExtra,
+  enableCreate = true,
+  showViewAction = true,
+  showEditAction = true,
+  showDeleteAction = true,
 }) => {
   const {
     data,
@@ -75,6 +79,9 @@ const CRUDManager = ({
           onEdit={() => openModal("edit", item)}
           onDelete={() => openModal("delete", item)}
           customActions={customActions}
+          showView={showViewAction}
+          showEdit={showEditAction}
+          showDelete={showDeleteAction}
         />
       ),
     },
@@ -139,7 +146,7 @@ const CRUDManager = ({
       <DataHeader
         title={title}
         description={description}
-        onCreateClick={() => openModal("create")}
+        onCreateClick={enableCreate ? () => openModal("create") : undefined}
         error={error}
         icon={icon}
         actions={headerActions}

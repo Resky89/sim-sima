@@ -321,7 +321,7 @@ export const useCRUD = ({
       if (modals.create) {
         response = await service.create(dataToSend);
       } else {
-        const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id || selectedItem.satpas_id;
+        const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id || selectedItem.satpas_id || selectedItem.pendaftaran_id;
         response = await service.update(itemId, dataToSend);
       }
 
@@ -401,7 +401,7 @@ export const useCRUD = ({
       setSubmitting(true);
       setError("");
 
-      const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id || selectedItem.satpas_id;
+      const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id || selectedItem.satpas_id || selectedItem.pendaftaran_id;
       const response = await service.delete(itemId);
 
       if (response.success) {

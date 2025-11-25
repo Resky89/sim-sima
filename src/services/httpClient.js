@@ -175,6 +175,18 @@ class HttpClient {
     });
   }
 
+  patch(endpoint, data) {
+    const isFormData = data instanceof FormData;
+    const body = isFormData ? data : JSON.stringify(data);
+    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+
+    return this.request(endpoint, {
+      method: 'PATCH',
+      body,
+      headers,
+    });
+  }
+
   delete(endpoint) {
     return this.request(endpoint, { 
       method: 'DELETE',

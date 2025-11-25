@@ -13,6 +13,7 @@ import SIMListPage from './pages/SIM.jsx';
 import SatpasListPage from './pages/Satpas.jsx';
 import UserListPage from './pages/Users.jsx';
 import ProfilePage from './pages/Profile.jsx';
+import PendaftaranPage from './pages/Pendaftaran.jsx';
 
 function App() {
   const dispatch = useDispatch();
@@ -55,6 +56,7 @@ function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="ktp" element={<KTPListPage />} />
         <Route path="sim" element={<SIMListPage />} /> 
+        <Route path="pendaftaran" element={<PendaftaranPage />} />
         <Route path="satpas" element={<SatpasListPage />} />
         <Route path="users" element={<UserListPage />} />
         <Route path="profile" element={<ProfilePage />} />

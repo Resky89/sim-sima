@@ -20,6 +20,11 @@ export const API_CONFIG = {
       BASE: '/api/sim',
       BY_ID: (id) => `/api/sim/${id}`
     },
+    PENDAFTARAN: {
+      BASE: '/api/pendaftaran',
+      BY_ID: (id) => `/api/pendaftaran/${id}`,
+      STATUS: (id) => `/api/pendaftaran/${id}/status`
+    },
     SATPAS: {
       BASE: '/api/satpas',
       BY_ID: (id) => `/api/satpas/${id}`

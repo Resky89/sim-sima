@@ -18,21 +18,6 @@ const Users = () => {
       title: "Email",
       render: (value) => <div className="text-gray-600">{value}</div>,
     },
-    {
-      key: "is_active",
-      title: "Status",
-      render: (value) => (
-        <span
-          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            value === 1 || value === true
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {value === 1 || value === true ? "Aktif" : "Tidak Aktif"}
-        </span>
-      ),
-    },
   ];
 
   const formFields = [
@@ -60,24 +45,12 @@ const Users = () => {
       placeholder: "Masukkan password",
       icon: "🔒",
     },
-    {
-      name: "is_active",
-      label: "Status",
-      type: "select",
-      required: false,
-      options: [
-        { value: true, label: "Aktif" },
-        { value: false, label: "Tidak Aktif" },
-      ],
-      icon: "⚡",
-    },
   ];
 
   const initialFormData = {
     email: "",
     full_name: "",
     password: "",
-    is_active: true,
   };
 
   const validationRules = {
@@ -113,17 +86,7 @@ const Users = () => {
     },
   };
 
-  const filterOptions = [
-    {
-      key: "is_active",
-      label: "Status",
-      placeholder: "Filter Status",
-      options: [
-        { value: true, label: "Aktif" },
-        { value: false, label: "Tidak Aktif" },
-      ],
-    },
-  ];
+  const filterOptions = [];
 
   // Fungsi untuk menangani error dari CRUDManager
   const handleError = (error) => {

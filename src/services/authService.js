@@ -48,5 +48,18 @@ export const authService = {
 
     throw new Error(response.errors || 'Failed to get profile');
   },
+
+  async refreshToken() {
+    const response = await httpClient.post(API_CONFIG.ENDPOINTS.AUTH.REFRESH);
+
+    if (response.success) {
+      const { tokens, user } = response.data;
+      setToken(tokens.access_token);
+      setUser(user);
+      return response;
+    }
+
+    throw new Error(response.errors || 'Token refresh failed');
+  },
 };
 

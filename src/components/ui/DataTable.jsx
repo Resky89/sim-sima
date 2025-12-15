@@ -16,12 +16,12 @@ const DataTable = ({
   filterOptions = [],
   actions = null,
   onRowClick = null,
+  emptyMessage = "Tidak ada data yang tersedia",
   className = "",
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterValues, setFilterValues] = useState({});
 
-  // Normalize pagination values to be resilient across different shapes
   const currentPage = pagination.current_page ?? pagination.page ?? 1;
   const totalPages = pagination.total_pages ?? 1;
   const limit = pagination.limit ?? 10;
@@ -59,22 +59,27 @@ const DataTable = ({
   const showHeader = Boolean(onSearch) || (filterOptions && filterOptions.length > 0) || Boolean(actions);
 
   return (
-    <div
-      className={`bg-white rounded-xl shadow-sm border border-gray-200 ${className}`}
-    >
+    <div className={`card-premium overflow-hidden ${className}`}>
       {/* Header with Search and Filters */}
       {showHeader && (
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-blue-50/30">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex-1 w-full sm:w-auto">
               {onSearch && (
-                <Input
-                  type="text"
-                  placeholder={searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="max-w-md"
-                />
+                <div className="relative max-w-md">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={searchPlaceholder}
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 shadow-sm"
+                  />
+                </div>
               )}
             </div>
 
@@ -115,39 +120,41 @@ const DataTable = ({
       {/* Table */}
       <div className="overflow-x-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2 text-gray-600">Memuat data...</span>
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="loading-spinner mb-4"></div>
+            <span className="text-gray-500 text-sm">Memuat data...</span>
           </div>
         ) : data.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📄</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center py-16 px-4">
+            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center">
+              <span className="text-4xl">📄</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Tidak ada data
             </h3>
-            <p className="text-gray-500">
-              Belum ada data yang tersedia untuk ditampilkan.
+            <p className="text-gray-500 text-sm max-w-sm mx-auto">
+              {emptyMessage}
             </p>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-gradient-to-r from-gray-50 to-blue-50/30">
                 {columns.map((column) => (
                   <th
                     key={column.key}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
                   >
                     {column.title}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {data.map((row, index) => (
                 <tr
                   key={row.id || index}
-                  className={`hover:bg-gray-50 transition-colors ${
+                  className={`hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-purple-50/20 transition-all duration-200 ${
                     onRowClick ? "cursor-pointer" : ""
                   }`}
                   onClick={() => onRowClick?.(row)}
@@ -179,12 +186,14 @@ const DataTable = ({
 
       {/* Pagination */}
       {(totalItems > 0 || typeof onLimitChange === 'function') && (
-        <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 px-6 py-4 flex items-center justify-between border-t border-gray-100">
+          {/* Mobile Pagination */}
           <div className="flex-1 flex justify-between sm:hidden">
             <Button
               variant="outline"
               disabled={currentPage === 1}
               onClick={() => onPageChange?.(currentPage - 1)}
+              className="px-4 py-2"
             >
               Sebelumnya
             </Button>
@@ -192,33 +201,35 @@ const DataTable = ({
               variant="outline"
               disabled={currentPage === totalPages}
               onClick={() => onPageChange?.(currentPage + 1)}
+              className="px-4 py-2"
             >
               Selanjutnya
             </Button>
           </div>
 
+          {/* Desktop Pagination */}
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div className="flex items-center space-x-4">
-              <p className="text-sm text-gray-700">
+            <div className="flex items-center gap-6">
+              <p className="text-sm text-gray-600">
                 Menampilkan{" "}
-                <span className="font-medium">
+                <span className="font-semibold text-gray-900">
                   {(currentPage - 1) * limit + (totalItems > 0 ? 1 : 0)}
                 </span>{" "}
-                sampai{" "}
-                <span className="font-medium">
+                -{" "}
+                <span className="font-semibold text-gray-900">
                   {Math.min(currentPage * limit, totalItems)}
                 </span>{" "}
                 dari{" "}
-                <span className="font-medium">{totalItems}</span>{" "}
+                <span className="font-semibold text-gray-900">{totalItems}</span>{" "}
                 data
               </p>
 
-              <div className="flex items-center space-x-2">
-                <label className="text-sm text-gray-700">Per halaman:</label>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Per halaman:</label>
                 <select
                   value={limit}
                   onChange={(e) => onLimitChange?.(parseInt(e.target.value))}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm transition-all duration-200"
                 >
                   <option value={10}>10</option>
                   <option value={20}>20</option>
@@ -231,37 +242,41 @@ const DataTable = ({
 
             <div>
               {totalPages > 1 && (
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                <button
-                  onClick={() => onPageChange?.(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Sebelumnya
-                </button>
-
-                {getPageNumbers().map((page) => (
+                <nav className="flex items-center gap-1">
                   <button
-                    key={page}
-                    onClick={() => onPageChange?.(page)}
-                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                      page === currentPage
-                        ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-                        : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                    }`}
+                    onClick={() => onPageChange?.(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                   >
-                    {page}
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
-                ))}
 
-                <button
-                  onClick={() => onPageChange?.(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Selanjutnya
-                </button>
-              </nav>
+                  {getPageNumbers().map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => onPageChange?.(page)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        page === currentPage
+                          ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 shadow-sm"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => onPageChange?.(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </nav>
               )}
             </div>
           </div>

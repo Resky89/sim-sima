@@ -24,34 +24,51 @@ class HttpClient {
   // Refresh access token using refresh token
   async refreshAccessToken() {
     try {
+      console.log('[HttpClient] Attempting to refresh token...');
+      
       const response = await fetch(`${this.baseURL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        credentials: 'include', // Penting: mengirim cookies termasuk refresh_token
       });
 
       const data = await response.json().catch(() => ({}));
+      
+      console.log('[HttpClient] Refresh response status:', response.status);
+      console.log('[HttpClient] Refresh response data:', data);
 
       if (!response.ok) {
+        console.error('[HttpClient] Refresh token failed:', data);
         const err = new Error((data && (data.errors || data.message)) || 'Session expired');
         err.status = response.status;
         throw err;
       }
 
       // Normalize tokens shape from server
-      const tokens = data?.data?.tokens || data?.tokens || data;
-      if (tokens) {
-        const { user } = store.getState().auth; // Ambil user dari state
-        const accessToken = tokens.accessToken || tokens.access_token;
-        const csrfToken = tokens.csrfToken || tokens.csrf_token;
+      // Backend bisa return { data: { tokens: {...}, admin: {...} } }
+      const responseData = data?.data || data;
+      const tokens = responseData?.tokens || responseData;
+      const adminData = responseData?.admin || responseData?.user;
+      
+      if (tokens && (tokens.access_token || tokens.accessToken)) {
+        const currentState = store.getState().auth;
+        const accessToken = tokens.access_token || tokens.accessToken;
+        const csrfToken = tokens.csrf_token || tokens.csrfToken || currentState.csrfToken;
+        
+        // Update user data jika tersedia dari response
+        const user = adminData || currentState.user;
+        
+        console.log('[HttpClient] Token refreshed successfully');
         store.dispatch(setCredentials({ user, accessToken, csrfToken }));
         return accessToken;
       }
 
+      console.error('[HttpClient] Invalid token response structure:', data);
       throw new Error('Invalid token response');
     } catch (error) {
+      console.error('[HttpClient] Refresh token error:', error.message);
       // Jika refresh gagal total, dispatch logout
       store.dispatch(logOut());
       throw error;

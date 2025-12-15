@@ -1,50 +1,90 @@
 import CRUDManager from "../components/common/CRUDManager";
 import { simService } from "../services/simService";
-import { ktpService } from "../services/ktpService";
+import { pendaftaranService } from "../services/pendaftaranService";
 import { SIM_ENUMS, KTP_ENUMS } from "../constants/enums.jsx";
 import { useState, useEffect } from "react";
 import "../styles/error.css";
 
 const SIM = () => {
   const [errorMessage, setErrorMessage] = useState(null);
-  const [nikOptions, setNikOptions] = useState([]);
+  const [pendaftaranOptions, setPendaftaranOptions] = useState([]);
 
-  // Helper: map nilai KTP ke enum SIM
-  const mapJenisKelamin = (jk) => {
-    if (!jk) return "";
-    const v = String(jk).toUpperCase();
-    if (v === "L" || v.includes("LAKI")) return "laki_laki";
-    if (v === "P" || v.includes("PEREMPUAN")) return "perempuan";
-    return "";
-  };
-
-  // Transform data sebelum submit: kirim hanya path untuk picture_path dan hapus field internal
   const beforeSubmitSIM = (data) => {
-    const out = { ...data };
-    // Hapus flag internal agar tidak terkirim ke backend
-    if (Object.prototype.hasOwnProperty.call(out, "locked_by_ktp")) {
-      delete out.locked_by_ktp;
+    console.log('beforeSubmitSIM - Original data:', data);
+    
+    // Validasi field wajib
+    const errors = [];
+    
+    if (!data.pendaftaran_id) {
+      errors.push('Pendaftaran ID harus dipilih');
     }
-    if (Object.prototype.hasOwnProperty.call(out, "_ktp")) {
-      delete out._ktp;
+    
+    if (!data.tanggal_terbit) {
+      errors.push('Tanggal terbit harus diisi');
     }
-    const v = out.picture_path;
-    if (v instanceof File) {
-      // Untuk sementara, gunakan pola path statis berbasis nama file
-      out.picture_path = `/uploads/sim/${v.name}`;
-    } else if (v && typeof v === "object") {
-      const src = v.url || v.preview || v.path;
-      if (src) out.picture_path = src;
-    } // jika string, biarkan apa adanya
-    return out;
-  };
+    
+    if (!data.tanggal_expired) {
+      errors.push('Tanggal expired harus diisi');
+    }
+    
+    // Validasi picture dengan berbagai format yang mungkin
+    const hasPicture = 
+      (data.picture instanceof File) ||
+      (data.picture instanceof FileList && data.picture.length > 0) ||
+      (data.picture && typeof data.picture === 'object' && data.picture.file instanceof File);
+    
+    if (!hasPicture) {
+      errors.push('Foto SIM harus dilampirkan');
+    }
+    
+    // Jika ada error, throw error untuk ditangani oleh CRUDManager
+    if (errors.length > 0) {
+      const errorMsg = 'Validasi gagal:\\n' + errors.join('\\n');
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    // Siapkan FormData sesuai permintaan Postman
+    const formData = new FormData();
+    
+    // Wajib: pendaftaran_id
+    formData.append("pendaftaran_id", data.pendaftaran_id);
+    console.log('Added pendaftaran_id:', data.pendaftaran_id);
+    
+    // Wajib: tanggal_terbit (YYYY-MM-DD)
+    formData.append("tanggal_terbit", data.tanggal_terbit);
+    console.log('Added tanggal_terbit:', data.tanggal_terbit);
+    
+    // Wajib: tanggal_expired (YYYY-MM-DD)
+    formData.append("tanggal_expired", data.tanggal_expired);
+    console.log('Added tanggal_expired:', data.tanggal_expired);
+    
+    // Wajib: picture (File)
+    let pictureFile = null;
+    if (data.picture instanceof File) {
+      pictureFile = data.picture;
+    } else if (data.picture instanceof FileList && data.picture.length > 0) {
+      pictureFile = data.picture[0];
+    } else if (data.picture && typeof data.picture === 'object' && data.picture.file instanceof File) {
+      pictureFile = data.picture.file;
+    }
+    
+    if (pictureFile) {
+      formData.append("picture", pictureFile);
+      console.log('Added picture:', pictureFile.name, 'Size:', pictureFile.size, 'bytes');
+    }
+    
+    // Log semua entries dalam FormData untuk debugging
+    console.log('FormData entries:');
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}:`, value.name, `(${value.size} bytes)`);
+      } else {
+        console.log(`  ${key}:`, value);
+      }
+    }
 
-  const mapGolDarah = (gd) => {
-    if (!gd) return "";
-    const v = String(gd).toUpperCase();
-    if (["A", "B", "AB", "O"].includes(v)) return v.toLowerCase();
-    if (v === "TIDAK_TAHU" || v === "-" || v === "UNKNOWN") return "tidak_tahu";
-    return "";
+    return formData;
   };
 
   const toDateInput = (dateStr) => {
@@ -57,11 +97,14 @@ const SIM = () => {
     return `${y}-${m}-${da}`;
   };
 
-  // Formatting helpers for SIM Detail Card
   const formatDateID = (dateStr) => {
     if (!dateStr) return "-";
     const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? "-" : d.toLocaleDateString("id-ID");
+    return isNaN(d.getTime()) ? "-" : d.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
   };
 
   const formatNomorSim = (num) => {
@@ -70,21 +113,12 @@ const SIM = () => {
     return digits.replace(/(.{4})/g, "$1-").replace(/-$/, "");
   };
 
-  // Normalize key: lowercased, remove spaces and underscores
   const normalizeJenisSimKey = (val) =>
     (val ?? "")
       .toString()
       .trim()
       .toLowerCase()
       .replace(/[\s_]/g, "");
-
-  const getJenisSimText = (value) => {
-    const key = normalizeJenisSimKey(value);
-    const found = SIM_ENUMS.JENIS_SIM.find(
-      (i) => normalizeJenisSimKey(i.value) === key
-    );
-    return found?.label || (value ? getJenisSimCode(value) : "-");
-  };
 
   const getJenisSimCode = (value) => {
     const key = normalizeJenisSimKey(value);
@@ -112,7 +146,7 @@ const SIM = () => {
     if (!val) return "-";
     const v = String(val).toLowerCase();
     if (v.includes("laki")) return "PRIA";
-    if (v.includes("perempuan")) return "PEREMPUAN";
+    if (v.includes("perempuan")) return "WANITA";
     return String(val).toUpperCase();
   };
 
@@ -120,50 +154,46 @@ const SIM = () => {
     if (!v) return "-";
     const u = String(v).toLowerCase();
     if (["a", "b", "ab", "o"].includes(u)) return u.toUpperCase();
-    if (u === "tidak_tahu") return "TIDAK TAHU";
+    if (u === "tidak_tahu") return "-";
     return String(v).toUpperCase();
   };
 
-  // Vehicle info mapping per jenis SIM
   const getVehicleInfo = (jenis) => {
     const key = normalizeJenisSimKey(jenis);
-    if (key === "c") return { icon: "🏍️", vehicle: "Motor", ccInfo: "≤ 250 cc" };
-    if (key === "ci" || key === "c1") return { icon: "🏍️", vehicle: "Motor", ccInfo: "250–500 cc" };
-    if (key === "cii" || key === "c2") return { icon: "🏍️", vehicle: "Motor", ccInfo: "≥ 500 cc" };
-    if (key === "bi" || key === "b1" || key === "biumum") return { icon: "🚚", vehicle: "Kendaraan Barang/Bus (B I)", ccInfo: null };
-    if (key === "bii" || key === "b2" || key === "biiumum") return { icon: "🚛", vehicle: "Kendaraan Berat (B II)", ccInfo: null };
-    if (key === "d" || key === "di") return { icon: "♿", vehicle: "Khusus Disabilitas", ccInfo: null };
-    // default A / A Umum
-    return { icon: "🚗", vehicle: "Mobil (A)", ccInfo: null };
+    if (key === "c") return { icon: "🏍️", vehicle: "Motor", ccInfo: "≤ 250 cc", color: "blue" };
+    if (key === "ci" || key === "c1") return { icon: "🏍️", vehicle: "Motor", ccInfo: "250–500 cc", color: "purple" };
+    if (key === "cii" || key === "c2") return { icon: "🏍️", vehicle: "Motor Besar", ccInfo: "≥ 500 cc", color: "indigo" };
+    if (key === "bi" || key === "b1" || key === "biumum") return { icon: "🚚", vehicle: "Truk/Bus", ccInfo: null, color: "orange" };
+    if (key === "bii" || key === "b2" || key === "biiumum") return { icon: "🚛", vehicle: "Truk Berat", ccInfo: null, color: "red" };
+    if (key === "d" || key === "di") return { icon: "♿", vehicle: "Khusus", ccInfo: null, color: "gray" };
+    return { icon: "🚗", vehicle: "Mobil", ccInfo: null, color: "emerald" };
   };
 
-  // Badge color classes per jenis SIM
   const getSimBadgeClasses = (jenis) => {
     const key = normalizeJenisSimKey(jenis);
     const map = {
-      a: "bg-emerald-100 text-emerald-800 border-emerald-200",
-      aumum: "bg-emerald-100 text-emerald-800 border-emerald-200",
-      bi: "bg-orange-100 text-orange-800 border-orange-200",
-      biumum: "bg-orange-100 text-orange-800 border-orange-200",
-      bii: "bg-red-100 text-red-800 border-red-200",
-      biiumum: "bg-red-100 text-red-800 border-red-200",
-      c: "bg-blue-100 text-blue-800 border-blue-200",
-      ci: "bg-purple-100 text-purple-800 border-purple-200",
-      cii: "bg-indigo-100 text-indigo-800 border-indigo-200",
-      d: "bg-gray-200 text-gray-800 border-gray-300",
-      di: "bg-gray-200 text-gray-800 border-gray-300",
-      // backward compatibility
-      b1: "bg-orange-100 text-orange-800 border-orange-200",
-      b2: "bg-red-100 text-red-800 border-red-200",
-      c1: "bg-purple-100 text-purple-800 border-purple-200",
-      c2: "bg-indigo-100 text-indigo-800 border-indigo-200",
+      a: "bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-emerald-200",
+      aumum: "bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-emerald-200",
+      bi: "bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 border-orange-200",
+      biumum: "bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 border-orange-200",
+      bii: "bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-200",
+      biiumum: "bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-200",
+      c: "bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border-blue-200",
+      ci: "bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 border-purple-200",
+      cii: "bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 border-indigo-200",
+      d: "bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border-gray-300",
+      di: "bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border-gray-300",
+      b1: "bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 border-orange-200",
+      b2: "bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-200",
+      c1: "bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 border-purple-200",
+      c2: "bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 border-indigo-200",
     };
-    return map[key] || "bg-slate-100 text-slate-800 border-slate-200";
+    return map[key] || "bg-gradient-to-r from-slate-50 to-gray-50 text-slate-700 border-slate-200";
   };
 
   const formatAlamat = (item) => {
     const parts = [];
-    if (item.rt || item.rw) parts.push(`RT ${item.rt || '-'} / RW ${item.rw || '-'}`);
+    if (item.rt || item.rw) parts.push(`RT ${item.rt || '-'}/RW ${item.rw || '-'}`);
     if (item.kecamatan) parts.push(item.kecamatan);
     if (item.kabupaten) parts.push(item.kabupaten);
     if (item.provinsi) parts.push(item.provinsi);
@@ -184,81 +214,217 @@ const SIM = () => {
     return null;
   };
 
+  const isExpired = (tanggalExpired) => {
+    return new Date(tanggalExpired) < new Date();
+  };
+
   const renderSIMView = (item) => {
     const nomorSim = formatNomorSim(item.nomor_sim);
     const jenisSimCode = getJenisSimCode(item.jenis_sim);
-    const jenisSimText = getJenisSimText(item.jenis_sim);
     const tglLahirText = formatDateID(item.tanggal_lahir);
     const ttl = [item.tempat_lahir, tglLahirText !== "-" ? tglLahirText : ""].filter(Boolean).join(", ");
-    const golKel = `${getGolDarahText(item.gol_darah)} - ${getGenderText(item.jenis_kelamin)}`;
+    const golDarah = getGolDarahText(item.gol_darah);
+    const gender = getGenderText(item.jenis_kelamin);
     const pekerjaan = item.pekerjaan || "-";
     const alamat = formatAlamat(item);
-    const photo = getImageSrc(item.picture_path);
+    const photo = getImageSrc(item.picture_path); // Note: server returns picture_path usually
     const vehicleInfo = getVehicleInfo(item.jenis_sim);
+    const expired = isExpired(item.tanggal_expired);
 
     return (
-      <div className="max-w-3xl mx-auto">
-        <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-200">
-          {/* Header */}
-          <div className="bg-red-600 text-white p-4 sm:p-5 flex items-start justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="hidden sm:block text-2xl">🛡️</div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold tracking-widest">INDONESIA</div>
-                <div className="text-xs sm:text-sm tracking-widest uppercase opacity-90">SURAT IJIN MENGEMUDI</div>
+      <div className="max-w-2xl mx-auto animate-scale-in">
+        {/* SIM Card - Realistic Design */}
+        <div className="sim-card relative">
+          {/* Garuda Watermark */}
+          <div className="sim-garuda left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 text-[150px]">
+            🦅
+          </div>
+          
+          {/* Header - Red Section */}
+          <div className="sim-card-header relative px-5 py-4 md:px-6 md:py-5">
+            {/* Stars Decoration */}
+            <div className="absolute top-3 left-4 flex gap-1">
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className="text-yellow-300 text-xs drop-shadow">★</span>
+              ))}
+            </div>
+            
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-3">
+                {/* Garuda Emblem */}
+                <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full flex items-center justify-center shadow-lg border-2 border-yellow-200">
+                  <span className="text-2xl md:text-3xl drop-shadow-sm">🦅</span>
+                </div>
+                <div>
+                  <div className="text-xl md:text-2xl font-extrabold text-white tracking-widest drop-shadow-lg">
+                    INDONESIA
+                  </div>
+                  <div className="text-[10px] md:text-xs text-red-100 tracking-[0.15em] uppercase">
+                    Surat Izin Mengemudi
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <div className="text-[9px] md:text-[10px] text-red-200 uppercase tracking-wider mb-1">
+                  Driving Licence
+                </div>
+                <div className="text-3xl md:text-4xl font-black text-white tracking-wide drop-shadow-lg">
+                  {jenisSimCode}
+                </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-[10px] sm:text-xs uppercase opacity-90">DRIVING LICENCE</div>
-              <div className="text-2xl sm:text-4xl font-extrabold leading-none">{jenisSimCode}</div>
-            </div>
+            
+            {/* Hologram Strip */}
+            <div className="sim-hologram-strip absolute bottom-0 left-0 right-0 h-1.5 md:h-2"></div>
           </div>
 
-          {/* Body */}
-          <div className="relative bg-gray-50 p-4 sm:p-6">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-xs sm:text-sm text-gray-600">No. SIM</div>
-              <div className="font-mono font-semibold text-gray-800 text-sm sm:text-base">{nomorSim}</div>
+          {/* Body - Light Section */}
+          <div className="sim-card-body relative px-5 py-4 md:px-6 md:py-5">
+            {/* SIM Number Row */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 font-medium">No. SIM</span>
+              </div>
+              <div className="font-mono font-bold text-gray-900 text-lg md:text-xl tracking-wider">
+                {nomorSim}
+              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 sm:gap-6">
-              {/* Photo */}
-              <div className="col-span-1 flex items-start">
-                <div className="h-28 w-28 sm:h-32 sm:w-32 bg-white rounded-lg overflow-hidden border-4 border-gray-300 shadow-inner flex items-center justify-center">
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-3 gap-4 md:gap-6">
+              {/* Photo Column */}
+              <div className="col-span-1">
+                <div className="sim-photo-frame w-24 h-32 md:w-28 md:h-36 rounded-lg overflow-hidden flex items-center justify-center relative">
                   {photo ? (
                     <img src={photo} alt="Foto SIM" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="text-gray-400 text-6xl leading-none">👤</div>
+                    <div className="text-center">
+                      <div className="text-5xl text-gray-300 mb-1">👤</div>
+                      <div className="text-[9px] text-gray-400">Foto</div>
+                    </div>
                   )}
+                  {/* Photo shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none"></div>
+                </div>
+                
+                {/* Vehicle Badge */}
+                <div className="mt-3 flex items-center gap-1 text-xs">
+                  <span className="text-lg">{vehicleInfo.icon}</span>
+                  <span className="text-gray-600 font-medium">{vehicleInfo.vehicle}</span>
                 </div>
               </div>
 
-              {/* Details list */}
-              <div className="col-span-2">
-                <ol className="space-y-1.5 text-gray-900 text-sm sm:text-base">
-                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">1.</span><span className="font-semibold">{item.full_name || "-"}</span></li>
-                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">2.</span><span className="font-medium font-mono">{item.nik || "-"}</span></li>
-                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">3.</span><span className="font-medium">{golKel}</span></li>
-                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">4.</span><span className="font-medium">{ttl}</span></li>
-                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">5.</span><span className="font-medium capitalize">{pekerjaan}</span></li>
-                  <li className="grid grid-cols-[1.25rem_1fr] gap-2 items-start leading-6"><span className="text-right">6.</span><span className="font-medium">{alamat}</span></li>
-                </ol>
+              {/* Details Column */}
+              <div className="col-span-2 space-y-2">
+                <div className="grid gap-y-1.5 text-[12px] md:text-[13px]">
+                  {/* Row 1 - Name */}
+                  <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
+                    <span className="font-bold text-gray-500 text-right">1.</span>
+                    <span className="font-bold text-gray-900 uppercase truncate">{item.full_name || "-"}</span>
+                  </div>
+                  
+                  {/* Row 2 - NIK */}
+                  <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
+                    <span className="font-bold text-gray-500 text-right">2.</span>
+                    <span className="font-mono font-medium text-gray-800 tracking-wide">{item.nik || "-"}</span>
+                  </div>
+                  
+                  {/* Row 3 - Blood Type & Gender */}
+                  <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
+                    <span className="font-bold text-gray-500 text-right">3.</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-800">{golDarah}</span>
+                      <span className="text-gray-400">|</span>
+                      <span className="font-semibold text-gray-800">{gender}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Row 4 - Birth Info */}
+                  <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
+                    <span className="font-bold text-gray-500 text-right">4.</span>
+                    <span className="font-medium text-gray-800 truncate">{ttl || "-"}</span>
+                  </div>
+                  
+                  {/* Row 5 - Occupation */}
+                  <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
+                    <span className="font-bold text-gray-500 text-right">5.</span>
+                    <span className="font-medium text-gray-800 capitalize truncate">{pekerjaan}</span>
+                  </div>
+                  
+                  {/* Row 6 - Address */}
+                  <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
+                    <span className="font-bold text-gray-500 text-right">6.</span>
+                    <span className="font-medium text-gray-800 text-[11px] leading-4 line-clamp-2">{alamat}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="mt-6 flex items-end justify-between">
-              <div className="text-xs sm:text-sm text-gray-800 font-semibold flex items-center gap-2">
-                <span className="text-base">{vehicleInfo.icon}</span>
-                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded border border-gray-300 text-gray-800 bg-white">
-                  {jenisSimText}
+            <div className="mt-4 pt-3 border-t border-gray-200 flex items-end justify-between">
+              {/* Left - SIM Type Badge */}
+              <div className="flex items-center gap-3">
+                <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-lg border shadow-sm ${getSimBadgeClasses(item.jenis_sim)}`}>
+                  SIM {jenisSimCode}
                 </span>
-                {vehicleInfo.ccInfo ? (
-                  <span className="text-gray-600">• {vehicleInfo.ccInfo}</span>
-                ) : null}
+                {vehicleInfo.ccInfo && (
+                  <span className="text-xs text-gray-500 font-medium">
+                    {vehicleInfo.ccInfo}
+                  </span>
+                )}
               </div>
-              <div className="text-right text-xs sm:text-sm text-gray-800 font-semibold">
-                {formatDateID(item.tanggal_expired)}
+              
+              {/* Right - Expiry Date */}
+              <div className="text-right">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-0.5">Berlaku s/d</div>
+                <div className={`font-bold text-sm ${expired ? 'text-red-600' : 'text-gray-900'}`}>
+                  {formatDateID(item.tanggal_expired)}
+                </div>
+                {expired && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 text-[10px] font-semibold bg-red-100 text-red-700 rounded-full animate-pulse">
+                    <span>⚠️</span> EXPIRED
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            {/* Barcode Simulation */}
+            <div className="mt-4 flex items-center justify-center gap-[1px] opacity-60">
+              {[...Array(40)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-800"
+                  style={{
+                    width: Math.random() > 0.6 ? '2px' : '1px',
+                    height: '16px'
+                  }}
+                ></div>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Status Card */}
+        <div className={`mt-4 p-4 rounded-xl border ${expired 
+          ? 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200' 
+          : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              expired ? 'bg-red-100' : 'bg-emerald-100'
+            }`}>
+              <span className="text-xl">{expired ? '⏰' : '✅'}</span>
+            </div>
+            <div>
+              <div className={`font-semibold ${expired ? 'text-red-700' : 'text-emerald-700'}`}>
+                {expired ? 'SIM Sudah Kedaluwarsa' : 'SIM Masih Berlaku'}
+              </div>
+              <div className="text-sm text-gray-600">
+                {expired 
+                  ? 'Silakan perpanjang SIM Anda segera' 
+                  : `Berlaku hingga ${formatDateID(item.tanggal_expired)}`
+                }
               </div>
             </div>
           </div>
@@ -267,40 +433,41 @@ const SIM = () => {
     );
   };
 
-  // Load daftar NIK dari endpoint KTP (tampilkan NIK pada dropdown)
   useEffect(() => {
-    const loadNIKs = async () => {
+    const loadPendaftaran = async () => {
       try {
-        const res = await ktpService.getAllKTP();
-        const items = Array.isArray(res) ? res : (res?.data || []);
-        const uniq = new Map();
-        items.forEach((it) => {
-          if (it?.nik) uniq.set(it.nik, { value: it.nik, label: it.nik });
-        });
-        setNikOptions(Array.from(uniq.values()));
+        // API SIM Create memerlukan pendaftaran dengan status 'disetujui' (approved)
+        const res = await pendaftaranService.getList({ status: 'disetujui' });
+        const items = res?.data || [];
+        const options = items.map((it) => ({
+          value: it.id || it.pendaftaran_id,
+          label: `${it.code || it.kode_pendaftaran} - ${it.jenis_sim?.toUpperCase()} (${it.user_name || it.nik || 'User'})`,
+          original: it,
+        }));
+        setPendaftaranOptions(options);
+        console.log(`Loaded ${options.length} approved pendaftaran for SIM creation`);
       } catch (e) {
-        setErrorMessage("Gagal memuat daftar NIK dari data KTP");
+        console.error('Failed to load pendaftaran:', e);
+        setErrorMessage("Gagal memuat daftar pendaftaran yang disetujui");
       }
     };
-    loadNIKs();
+    loadPendaftaran();
   }, []);
-  // Check if SIM is expired
-  const isExpired = (tanggalExpired) => {
-    return new Date(tanggalExpired) < new Date();
-  };
 
   const columns = [
     {
       key: "nomor_sim",
       title: "Nomor SIM",
       render: (value) => (
-        <div className="font-mono text-sm text-gray-900">{value}</div>
+        <div className="font-mono text-sm bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-semibold">
+          {value}
+        </div>
       ),
     },
     {
       key: "full_name",
       title: "Nama Lengkap",
-      render: (value) => <div className="text-gray-900">{value}</div>,
+      render: (value) => <div className="text-gray-800 font-medium">{value}</div>,
     },
     {
       key: "nik",
@@ -318,57 +485,71 @@ const SIM = () => {
           (item) => normalizeJenisSimKey(item.value) === v
         );
         return (
-          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getSimBadgeClasses(value)}`}>
+          <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${getSimBadgeClasses(value)}`}>
             {jenisSim ? jenisSim.label : getJenisSimCode(value)}
           </span>
         );
       },
     },
-
     {
       key: "tanggal_expired",
       title: "Tanggal Expired",
       render: (value) => (
         <div className="text-sm">
-          <div
-            className={`${isExpired(value) ? "text-red-600" : "text-gray-600"}`}
-          >
+          <div className={`font-medium ${isExpired(value) ? "text-red-600" : "text-gray-700"}`}>
             {value ? new Date(value).toLocaleDateString("id-ID") : "-"}
           </div>
           {isExpired(value) && (
-            <span className="inline-flex px-1 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-800 mt-1">
-              Expired
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-gradient-to-r from-red-100 to-orange-100 text-red-700 mt-1">
+              ⚠️ Expired
             </span>
           )}
         </div>
       ),
     },
-    {
-      key: "creator_name",
-      title: "Dibuat Oleh",
-      render: (value) => <div className="text-gray-600">{value || "-"}</div>,
-    },
   ];
 
-  // Form fields: hanya tampilkan field manual (NIK, jenis SIM, tanggal expired, upload gambar)
-  const formFields = () => {
-    const baseFields = [
+  const formFields = ({ formData, mode }) => {
+    const isCreate = mode === "create";
+    
+    // Untuk validasi tanggal
+    const today = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+    const tanggalTerbit = formData?.tanggal_terbit;
+    
+    // Tanggal expired minimal 1 hari setelah tanggal terbit
+    let minTanggalExpired = today;
+    if (tanggalTerbit) {
+      const terbitDate = new Date(tanggalTerbit);
+      terbitDate.setDate(terbitDate.getDate() + 1); // Minimal 1 hari setelah terbit
+      minTanggalExpired = terbitDate.toISOString().split('T')[0];
+    }
+
+    return [
       {
-        name: "nik",
-        label: "NIK",
+        name: "pendaftaran_id",
+        label: "Pendaftaran (Disetujui)",
         type: "select",
-        required: true,
-        placeholder: "Pilih NIK",
-        options: nikOptions,
-        icon: "🆔",
+        required: isCreate,
+        options: pendaftaranOptions,
+        disabled: !isCreate,
+        icon: "📝",
+        className: !isCreate ? "hidden" : "",
       },
       {
         name: "jenis_sim",
         label: "Jenis SIM",
-        type: "select",
-        required: true,
-        options: SIM_ENUMS.JENIS_SIM,
+        type: "text",
+        disabled: true,
         icon: "📋",
+      },
+      {
+        name: "tanggal_terbit",
+        label: "Tanggal Terbit",
+        type: "date",
+        required: isCreate,
+        icon: "📅",
+        min: today, 
+        helpText: "Tanggal terbit tidak boleh di masa lalu",
       },
       {
         name: "tanggal_expired",
@@ -376,96 +557,73 @@ const SIM = () => {
         type: "date",
         required: true,
         icon: "⏰",
+        min: minTanggalExpired, 
+        helpText: tanggalTerbit 
+          ? `Minimal 1 hari setelah tanggal terbit (${new Date(tanggalTerbit).toLocaleDateString('id-ID')})` 
+          : "Pilih tanggal terbit terlebih dahulu",
       },
       {
-        name: "picture_path",
+        name: "picture",
         label: "Foto SIM",
         type: "file",
-        required: true,
+        required: isCreate,
         accept: "image/*",
         icon: "📷",
-        renderPreview: (value) => {
-          if (!value) return null;
-
-          // Handle jika value adalah File object (saat upload)
-          if (value instanceof File) {
-            return (
-              <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
-                <img
-                  src={URL.createObjectURL(value)}
-                  alt="Foto SIM Preview"
-                  className="w-full h-auto object-contain"
-                />
-              </div>
-            );
-          }
-
-          // Handle jika value adalah object dengan property path atau url (dari FormData)
-          if (
-            typeof value === "object" &&
-            (value.path || value.url || value.preview)
-          ) {
-            const imgSrc = value.url || value.preview || value.path;
-            return (
-              <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
-                <img
-                  src={
-                    imgSrc.startsWith("http") ||
-                    imgSrc.startsWith("blob:") ||
-                    imgSrc.startsWith("data:")
-                      ? imgSrc
-                      : `${import.meta.env.VITE_API_URL || ""}${imgSrc}`
-                  }
-                  alt="Foto SIM"
-                  className="w-full h-auto object-contain"
-                />
-              </div>
-            );
-          }
-
-          // Handle jika value adalah string (dari server)
-          return (
-            <div className="mt-2 border rounded-lg overflow-hidden w-full max-w-xs">
-              <img
-                src={
-                  typeof value === "string" &&
-                  (value.startsWith("http") ||
-                    value.startsWith("blob:") ||
-                    value.startsWith("data:"))
-                    ? value
-                    : `${import.meta.env.VITE_API_URL || ""}${value}`
-                }
-                alt="Foto SIM"
-                className="w-full h-auto object-contain"
-              />
-            </div>
-          );
-        },
       },
     ];
-
-    return baseFields;
   };
 
-  // Gunakan objek kosong untuk initialFormData agar form tambah SIM kosong saat dibuka
   const initialFormData = {};
 
   const validationRules = {
-    nik: {
+    pendaftaran_id: {
       required: (_, isCreate) => isCreate,
-      label: "NIK",
-      pattern: /^[0-9]{16}$/,
-      patternMessage: "NIK harus 16 digit angka",
+      label: "Pendaftaran",
     },
-    jenis_sim: {
+    tanggal_terbit: {
       required: (_, isCreate) => isCreate,
-      label: "Jenis SIM",
+      label: "Tanggal Terbit",
+      custom: (value) => {
+        if (!value) return true; // Will be caught by required
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const terbitDate = new Date(value);
+        terbitDate.setHours(0, 0, 0, 0);
+        
+        if (terbitDate < today) {
+          return "Tanggal terbit tidak boleh di masa lalu";
+        }
+        return true;
+      }
     },
     tanggal_expired: {
-      required: (_, isCreate) => isCreate,
+      required: true,
       label: "Tanggal Expired",
+      custom: (value, formData) => {
+        if (!value) return true; // Will be caught by required
+        
+        const expiredDate = new Date(value);
+        const terbitDate = formData?.tanggal_terbit ? new Date(formData.tanggal_terbit) : null;
+        
+        if (terbitDate) {
+          // Tanggal expired harus lebih dari tanggal terbit
+          if (expiredDate <= terbitDate) {
+            return "Tanggal expired harus lebih dari tanggal terbit";
+          }
+          
+          // Minimal 1 hari setelah tanggal terbit
+          const minExpired = new Date(terbitDate);
+          minExpired.setDate(minExpired.getDate() + 1);
+          
+          if (expiredDate < minExpired) {
+            return "Tanggal expired minimal 1 hari setelah tanggal terbit";
+          }
+        }
+        
+        return true;
+      }
     },
-    picture_path: {
+    picture: {
       required: (_, isCreate) => isCreate,
       label: "Foto SIM",
     },
@@ -486,136 +644,85 @@ const SIM = () => {
     },
   ];
 
-  // Fungsi untuk menangani error dari CRUDManager
   const handleError = (error) => {
     setErrorMessage(error);
-    // Scroll ke atas halaman agar notifikasi error terlihat
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Callback perubahan form: saat NIK dipilih, ambil data KTP by NIK, isi otomatis field terkait, dan simpan detail KTP untuk kartu
   const handleSIMFormChange = async ({ field, value, setFormData }) => {
-    if (field !== "nik" || !value) return;
-    try {
-      const res = await ktpService.getKTPByNIK(value);
-      const ktp = res?.data ?? res; // dukung bentuk {success, data} atau langsung objek
-      if (!ktp || !ktp.nik) return;
+    if (field === "pendaftaran_id" && value) {
+      setFormData(prev => ({ ...prev, pendaftaran_id: value, _pendaftaran: null }));
 
-      const autofill = {
-        full_name: ktp.nama_lengkap || "",
-        jenis_kelamin: mapJenisKelamin(ktp.jenis_kelamin),
-        gol_darah: mapGolDarah(ktp.golongan_darah),
-        tempat_lahir: ktp.tempat_lahir || "",
-        tanggal_lahir: toDateInput(ktp.tanggal_lahir),
-        pekerjaan: ktp.pekerjaan || "",
-        rt: ktp.rt || "",
-        rw: ktp.rw || "",
-        kecamatan: ktp.kecamatan || "",
-        kabupaten: ktp.kabupaten || "",
-        provinsi: ktp.provinsi || "",
-      };
+      try {
+        const res = await pendaftaranService.getById(value);
+        const item = res?.data || res;
 
-      // Jangan menimpa: nomor_sim, jenis_sim, picture_path, tanggal_expired
-      setFormData((prev) => ({
-        ...prev,
-        ...autofill,
-        nik: value,
-        locked_by_ktp: true,
-        _ktp: ktp,
-      }));
-    } catch (e) {
-      setErrorMessage("Gagal mengambil data KTP berdasarkan NIK");
+        if (item) {
+          setFormData((prev) => ({
+            ...prev,
+            _pendaftaran: item,
+            jenis_sim: item.jenis_sim || prev.jenis_sim,
+          }));
+        }
+      } catch (e) {
+        console.error("Gagal memuat detail pendaftaran", e);
+        setErrorMessage("Gagal mengambil detail pendaftaran dari server");
+      }
     }
   };
 
-  // Komponen inline untuk menampilkan kartu detail KTP ketika NIK dipilih
-  const KTPDetailInline = ({ formData, setFormData }) => {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-
-    useEffect(() => {
-      const ensureKTP = async () => {
-        if (!formData?.nik) return;
-        if (formData?._ktp && formData?._ktp?.nik === formData.nik) return;
-        setLoading(true);
-        setError("");
-        try {
-          const res = await ktpService.getKTPByNIK(formData.nik);
-          const ktp = res?.data ?? res;
-          if (ktp && ktp.nik) {
-            setFormData((prev) => ({ ...prev, _ktp: ktp }));
-          }
-        } catch (err) {
-          setError("Gagal memuat detail KTP");
-        } finally {
-          setLoading(false);
-        }
-      };
-      ensureKTP();
-    }, [formData?.nik]);
-
-    const item = formData?._ktp;
-    if (!formData?.nik) {
+  // Preview Pendaftaran & KTP Component
+  const PendaftaranDetailInline = ({ formData }) => {
+    const pendaftaran = formData?._pendaftaran;
+    const ktp = formData?._ktp;
+    
+    // Jika belum pilih dan ini mode create
+    if (!formData?.pendaftaran_id && !formData?.nomor_sim) {
       return (
-        <div className="mb-2 text-sm text-gray-600">Pilih NIK untuk melihat detail KTP.</div>
+         <div className="p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center mb-6">
+           <span className="text-4xl block mb-2">📝</span>
+           <p className="text-gray-500 font-medium">Silakan pilih Pendaftaran SIM terlebih dahulu</p>
+           <p className="text-xs text-gray-400 mt-1">Hanya pendaftaran dengan status "Disetujui" yang dapat diproses</p>
+         </div>
       );
     }
-    if (loading) {
-      return <div className="text-sm text-gray-600">Memuat detail KTP...</div>;
+    
+    // Jika data pendaftaran belum ada (misal mode edit sedang loading atau baru set ID)
+    if (!pendaftaran && formData?.pendaftaran_id) {
+       return <div className="text-sm text-gray-500 italic mb-4">Memuat detail pendaftaran...</div>;
     }
-    if (error) {
-      return <div className="text-sm text-red-600">{error}</div>;
-    }
-    if (!item) return null;
+
+    if (!pendaftaran && !ktp) return null;
 
     return (
-      <div className="p-3 border-2 border-gray-200 rounded-md bg-blue-50">
-        <div className="text-center mb-2">
-          <div className="font-bold text-sm">PROVINSI {item.provinsi}</div>
-          <div className="font-semibold text-xs">KABUPATEN {item.kabupaten}</div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="col-span-2 space-y-1">
-            <div className="grid grid-cols-3 gap-x-1">
-              <div className="font-semibold">NIK</div>
-              <div className="col-span-2">: {item.nik}</div>
-              <div className="font-semibold">Nama</div>
-              <div className="col-span-2">: {item.nama_lengkap}</div>
-              <div className="font-semibold">Tempat/Tgl Lahir</div>
-              <div className="col-span-2">: {item.tempat_lahir}, {formatDateID(item.tanggal_lahir)}</div>
-              <div className="font-semibold">Jenis Kelamin</div>
-              <div className="col-span-2">: {item.jenis_kelamin === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}</div>
-              <div className="font-semibold">Gol Darah</div>
-              <div className="col-span-2">: {item.golongan_darah}</div>
-              <div className="font-semibold">Alamat</div>
-              <div className="col-span-2">: {item.alamat}</div>
-              <div className="font-semibold">RT/RW</div>
-              <div className="col-span-2">: {item.rt}/{item.rw}</div>
-              <div className="font-semibold">Kel/Desa</div>
-              <div className="col-span-2">: {item.kelurahan}</div>
-              <div className="font-semibold">Kecamatan</div>
-              <div className="col-span-2">: {item.kecamatan}</div>
-              <div className="font-semibold">Agama</div>
-              <div className="col-span-2">: {item.agama}</div>
-              <div className="font-semibold">Status Perkawinan</div>
-              <div className="col-span-2">: {item.status_perkawinan}</div>
-              <div className="font-semibold">Pekerjaan</div>
-              <div className="col-span-2">: {item.pekerjaan}</div>
-              <div className="font-semibold">Kewarganegaraan</div>
-              <div className="col-span-2">: {item.kewarganegaraan}</div>
-            </div>
-          </div>
-          <div className="col-span-1 flex flex-col items-center">
-            <div className="border border-gray-300 h-24 w-20 bg-white flex items-center justify-center">
-              {item.pas_foto_path ? (
-                <img src={item.pas_foto_path} alt="Foto KTP" className="max-h-full max-w-full object-cover" />
-              ) : (
-                <div className="text-gray-400 text-[10px] text-center">Foto tidak tersedia</div>
-              )}
-            </div>
-            <div className="text-[10px] text-center mt-1 text-gray-600">
-              {item.kabupaten}, {formatDateID(item.tanggal_selesai)}
-            </div>
+      <div className="space-y-4 mb-6 animate-fade-in">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4">
+          <h4 className="flex items-center gap-2 font-bold text-blue-900 mb-3 pb-2 border-b border-blue-200/50">
+            <span>📄</span> Detail Pendaftaran
+          </h4>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+             <div>
+               <span className="text-xs text-blue-600 block mb-0.5">Kode Pendaftaran</span>
+               <span className="font-mono font-bold text-gray-800">{pendaftaran?.code || pendaftaran?.kode_pendaftaran || '-'}</span>
+             </div>
+             <div>
+               <span className="text-xs text-blue-600 block mb-0.5">Jenis SIM</span>
+               <span className="font-bold text-gray-800 bg-white px-2 py-0.5 rounded border border-blue-100 inline-block shadow-sm">
+                 {pendaftaran?.jenis_sim ? `SIM ${getJenisSimCode(pendaftaran.jenis_sim)}` : '-'}
+               </span>
+             </div>
+             <div>
+               <span className="text-xs text-blue-600 block mb-0.5">Tanggal Ujian</span>
+               <span className="font-medium text-gray-800">
+                 {pendaftaran?.tanggal_ujian ? formatDateID(pendaftaran.tanggal_ujian) : '-'}
+               </span>
+             </div>
+             <div>
+               <span className="text-xs text-blue-600 block mb-0.5">Status</span>
+               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                 <span>✅</span> {pendaftaran?.status ? pendaftaran.status.toUpperCase() : 'SELESAI'}
+               </span>
+             </div>
           </div>
         </div>
       </div>
@@ -623,27 +730,33 @@ const SIM = () => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Notifikasi Error yang lebih terlihat */}
+    <div className="space-y-4 animate-fade-in">
+      {/* Error Notification */}
       {errorMessage && (
-        <div className="error-container sticky top-4 z-50 mx-auto max-w-4xl shadow-lg">
-          <div className="flex items-center">
-            <span className="error-icon text-xl">⚠️</span>
-            <h3 className="error-title">Terjadi Kesalahan</h3>
-            <button 
-              className="ml-auto text-red-700 hover:text-red-900" 
-              onClick={() => setErrorMessage(null)}
-            >
-              ✕
-            </button>
+        <div className="sticky top-4 z-50 mx-auto max-w-4xl animate-fade-in-down">
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-4 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-xl">⚠️</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-800">Terjadi Kesalahan</h3>
+                <p className="text-sm text-red-600 mt-1">{errorMessage}</p>
+              </div>
+              <button 
+                className="text-red-400 hover:text-red-600 transition-colors p-1" 
+                onClick={() => setErrorMessage(null)}
+              >
+                ✕
+              </button>
+            </div>
           </div>
-          <p className="error-message">{errorMessage}</p>
         </div>
       )}
 
       <CRUDManager
         title="Data SIM"
-        description="Kelola data Surat Izin Mengemudi"
+        description="Surat Izin Mengemudi"
         service={simService}
         columns={columns}
         formFields={formFields}
@@ -656,11 +769,11 @@ const SIM = () => {
         onFormChange={handleSIMFormChange}
         onBeforeSubmit={beforeSubmitSIM}
         renderView={renderSIMView}
-        renderCreateExtra={({ formData, setFormData }) => (
-          <KTPDetailInline formData={formData} setFormData={setFormData} />
+        renderCreateExtra={({ formData }) => (
+          <PendaftaranDetailInline formData={formData} />
         )}
-        renderEditExtra={({ formData, setFormData }) => (
-          <KTPDetailInline formData={formData} setFormData={setFormData} />
+        renderEditExtra={({ formData }) => (
+          <PendaftaranDetailInline formData={formData} />
         )}
       />
     </div>

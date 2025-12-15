@@ -15,7 +15,20 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <PersistGate loading={null} persistor={persistor}>
         <BrowserRouter>
           <App />
-          <Toaster position="top-right" reverseOrder={false} />
+          <Toaster 
+            position="top-right" 
+            reverseOrder={false}
+            containerStyle={{
+              zIndex: 99999,
+            }}
+            toastOptions={{
+              // Ensure toasts appear above modals
+              style: {
+                zIndex: 99999,
+              },
+              duration: 4000,
+            }}
+          />
         </BrowserRouter>
       </PersistGate>
     </Provider>

@@ -9,6 +9,7 @@ const Input = forwardRef(
       type = "text",
       className = "",
       required = false,
+      helpText,
       rows,
       ...props
     },
@@ -66,6 +67,9 @@ const Input = forwardRef(
           )}
         </div>
         {error && <p className="error-text">{error}</p>}
+        {!error && helpText && (
+          <p className="mt-1 text-xs text-gray-500">{helpText}</p>
+        )}
       </div>
     );
   }

@@ -135,10 +135,10 @@ const SIM = () => {
 
   const getGenderText = (val) => {
     if (!val) return "-";
-    const v = String(val).toLowerCase();
-    if (v.includes("laki")) return "PRIA";
-    if (v.includes("perempuan")) return "WANITA";
-    return String(val).toUpperCase();
+    const v = String(val).toUpperCase().trim();
+    if (v === "L" || v.includes("LAKI")) return "PRIA";
+    if (v === "P" || v.includes("PEREMPUAN")) return "WANITA";
+    return v;
   };
 
   const getGolDarahText = (v) => {
@@ -354,38 +354,39 @@ const SIM = () => {
                     <span className="font-bold text-gray-900 uppercase truncate">{item.full_name || "-"}</span>
                   </div>
                   
-                  {/* Row 2 - NIK */}
+                  {/* Row 2 - Tempat Lahir + Tanggal Lahir */}
                   <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
                     <span className="font-bold text-gray-500 text-right">2.</span>
-                    <span className="font-mono font-medium text-gray-800 tracking-wide">{item.nik || "-"}</span>
+                    <span className="font-medium text-gray-800">
+                      {item.tempat_lahir || "-"}, {tglLahirText}
+                    </span>
                   </div>
                   
-                  {/* Row 3 - Blood Type & Gender */}
+                  {/* Row 3 - Blood Type - Gender */}
                   <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
                     <span className="font-bold text-gray-500 text-right">3.</span>
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-800">{golDarah}</span>
-                      <span className="text-gray-400">|</span>
-                      <span className="font-semibold text-gray-800">{gender}</span>
+                    <span className="font-semibold text-gray-800">{golDarah} - {gender}</span>
+                  </div>
+                  
+                  {/* Row 4 - Alamat Lengkap */}
+                  <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
+                    <span className="font-bold text-gray-500 text-right">4.</span>
+                    <div className="font-medium text-gray-800 text-[11px] leading-4">
+                      <div>RT {item.rt || "-"}/{item.rw || "-"} {item.kecamatan || "-"}</div>
+                      <div>{item.kabupaten || "-"}</div>
                     </div>
                   </div>
                   
-                  {/* Row 4 - Birth Info */}
-                  <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
-                    <span className="font-bold text-gray-500 text-right">4.</span>
-                    <span className="font-medium text-gray-800 truncate">{ttl || "-"}</span>
-                  </div>
-                  
-                  {/* Row 5 - Occupation */}
+                  {/* Row 5 - Pekerjaan */}
                   <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
                     <span className="font-bold text-gray-500 text-right">5.</span>
-                    <span className="font-medium text-gray-800 capitalize truncate">{pekerjaan}</span>
+                    <span className="font-medium text-gray-800 uppercase truncate">{pekerjaan}</span>
                   </div>
                   
-                  {/* Row 6 - Address */}
+                  {/* Row 6 - Domisili (Provinsi) */}
                   <div className="grid grid-cols-[20px_1fr] gap-2 items-start">
                     <span className="font-bold text-gray-500 text-right">6.</span>
-                    <span className="font-medium text-gray-800 text-[11px] leading-4 line-clamp-2">{alamat}</span>
+                    <span className="font-medium text-gray-800 uppercase truncate">{item.provinsi || "-"}</span>
                   </div>
                 </div>
               </div>

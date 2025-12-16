@@ -1,10 +1,122 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../redux/authSlice';
 import { userService } from '../services/userService';
 import { simService } from '../services/simService';
 import { ktpService } from '../services/ktpService';
+
+// Komponen StatCard di luar Dashboard agar tidak re-create setiap render
+const StatCard = memo(({ title, value, icon, gradient, link, delay, loading }) => (
+  <Link
+    to={link}
+    className="group relative overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 animate-fade-in-up"
+    style={{ animationDelay: `${delay}ms` }}
+  >
+    {/* Background Gradient Orb */}
+    <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${gradient} rounded-full opacity-10 group-hover:opacity-20 group-hover:scale-125 transition-all duration-500`}></div>
+    
+    <div className="relative flex items-center gap-4">
+      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300`}>
+        <span className="text-2xl">{icon}</span>
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-500 group-hover:text-gray-600 transition-colors">{title}</p>
+        <p className="text-3xl font-bold text-gray-900 mt-0.5">
+          {loading ? (
+            <span className="inline-block w-16 h-8 skeleton rounded"></span>
+          ) : (
+            value.toLocaleString('id-ID')
+          )}
+        </p>
+      </div>
+    </div>
+    
+    {/* Hover Arrow */}
+    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+      <svg className={`w-5 h-5 text-transparent bg-gradient-to-r ${gradient} bg-clip-text`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </div>
+  </Link>
+));
+
+StatCard.displayName = 'StatCard';
+
+// Komponen QuickAction di luar Dashboard
+const QuickAction = memo(({ title, description, icon, link, gradient, delay }) => (
+  <Link
+    to={link}
+    className={`group relative overflow-hidden p-6 rounded-2xl border-2 border-dashed border-gray-200 hover:border-transparent hover:bg-gradient-to-br ${gradient} transition-all duration-300 hover:shadow-lg animate-fade-in-up`}
+    style={{ animationDelay: `${delay}ms` }}
+  >
+    {/* Background Pattern */}
+    <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
+      <div className="absolute inset-0" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+      }}></div>
+    </div>
+    
+    <div className="relative text-center">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 group-hover:from-white/20 group-hover:to-white/10 flex items-center justify-center shadow-inner group-hover:shadow-none transition-all duration-300">
+        <span className="text-3xl group-hover:scale-110 transition-transform duration-300">{icon}</span>
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-white mb-2 transition-colors duration-300">{title}</h3>
+      <p className="text-sm text-gray-500 group-hover:text-white/80 transition-colors duration-300">{description}</p>
+    </div>
+  </Link>
+));
+
+QuickAction.displayName = 'QuickAction';
+
+// Komponen RecentActivity di luar Dashboard
+const RecentActivity = memo(() => (
+  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+    <div className="flex items-center justify-between mb-6">
+      <h3 className="text-lg font-semibold text-gray-900">Aktivitas Terbaru</h3>
+      <span className="text-xs text-gray-400 px-3 py-1 bg-gray-50 rounded-full">Live</span>
+    </div>
+    
+    <div className="space-y-4">
+      {[
+        { icon: "🆔", text: "Data KTP berhasil diakses", time: "2 menit lalu", color: "bg-purple-100" },
+        { icon: "🚗", text: "SIM baru ditambahkan", time: "15 menit lalu", color: "bg-orange-100" },
+        { icon: "👤", text: "Admin baru terdaftar", time: "1 jam lalu", color: "bg-blue-100" },
+      ].map((activity, i) => (
+        <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+          <div className={`w-10 h-10 ${activity.color} rounded-xl flex items-center justify-center`}>
+            <span className="text-lg">{activity.icon}</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-gray-700 font-medium">{activity.text}</p>
+            <p className="text-xs text-gray-400">{activity.time}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+));
+
+RecentActivity.displayName = 'RecentActivity';
+
+// Komponen Clock terpisah sehingga update tidak affect komponen lain
+const Clock = memo(({ currentTime }) => (
+  <div className="flex flex-col items-end bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/20">
+    <div className="text-3xl font-bold font-mono">
+      {currentTime.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}
+    </div>
+    <p className="text-blue-100 text-sm mt-1">
+      {currentTime.toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}
+    </p>
+  </div>
+));
+
+Clock.displayName = 'Clock';
 
 const Dashboard = () => {
   const user = useSelector(selectCurrentUser);
@@ -45,99 +157,14 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
-  const getGreeting = () => {
+  // Memoize greeting agar tidak berubah saat detik berubah (hanya saat jam berubah)
+  const greeting = useMemo(() => {
     const hour = currentTime.getHours();
     if (hour < 12) return { text: "Selamat Pagi", emoji: "🌅", color: "from-amber-400 to-orange-500" };
     if (hour < 15) return { text: "Selamat Siang", emoji: "☀️", color: "from-yellow-400 to-amber-500" };
     if (hour < 18) return { text: "Selamat Sore", emoji: "🌇", color: "from-orange-400 to-rose-500" };
     return { text: "Selamat Malam", emoji: "🌙", color: "from-indigo-400 to-purple-600" };
-  };
-
-  const greeting = getGreeting();
-
-  const StatCard = ({ title, value, icon, gradient, link, delay }) => (
-    <Link
-      to={link}
-      className={`group relative overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 animate-fade-in-up`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      {/* Background Gradient Orb */}
-      <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${gradient} rounded-full opacity-10 group-hover:opacity-20 group-hover:scale-125 transition-all duration-500`}></div>
-      
-      <div className="relative flex items-center gap-4">
-        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300`}>
-          <span className="text-2xl">{icon}</span>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500 group-hover:text-gray-600 transition-colors">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-0.5">
-            {stats.loading ? (
-              <span className="inline-block w-16 h-8 skeleton rounded"></span>
-            ) : (
-              value.toLocaleString('id-ID')
-            )}
-          </p>
-        </div>
-      </div>
-      
-      {/* Hover Arrow */}
-      <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-        <svg className={`w-5 h-5 text-transparent bg-gradient-to-r ${gradient} bg-clip-text`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </div>
-    </Link>
-  );
-
-  const QuickAction = ({ title, description, icon, link, gradient, delay }) => (
-    <Link
-      to={link}
-      className={`group relative overflow-hidden p-6 rounded-2xl border-2 border-dashed border-gray-200 hover:border-transparent hover:bg-gradient-to-br ${gradient} transition-all duration-300 hover:shadow-lg animate-fade-in-up`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
-      </div>
-      
-      <div className="relative text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 group-hover:from-white/20 group-hover:to-white/10 flex items-center justify-center shadow-inner group-hover:shadow-none transition-all duration-300">
-          <span className="text-3xl group-hover:scale-110 transition-transform duration-300">{icon}</span>
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-white mb-2 transition-colors duration-300">{title}</h3>
-        <p className="text-sm text-gray-500 group-hover:text-white/80 transition-colors duration-300">{description}</p>
-      </div>
-    </Link>
-  );
-
-  const RecentActivity = () => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Aktivitas Terbaru</h3>
-        <span className="text-xs text-gray-400 px-3 py-1 bg-gray-50 rounded-full">Live</span>
-      </div>
-      
-      <div className="space-y-4">
-        {[
-          { icon: "🆔", text: "Data KTP berhasil diakses", time: "2 menit lalu", color: "bg-purple-100" },
-          { icon: "🚗", text: "SIM baru ditambahkan", time: "15 menit lalu", color: "bg-orange-100" },
-          { icon: "👤", text: "Admin baru terdaftar", time: "1 jam lalu", color: "bg-blue-100" },
-        ].map((activity, i) => (
-          <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-            <div className={`w-10 h-10 ${activity.color} rounded-xl flex items-center justify-center`}>
-              <span className="text-lg">{activity.icon}</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-700 font-medium">{activity.text}</p>
-              <p className="text-xs text-gray-400">{activity.time}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  }, [currentTime.getHours()]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -168,19 +195,7 @@ const Dashboard = () => {
             </p>
           </div>
           
-          <div className="flex flex-col items-end bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/20">
-            <div className="text-3xl font-bold font-mono">
-              {currentTime.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}
-            </div>
-            <p className="text-blue-100 text-sm mt-1">
-              {currentTime.toLocaleDateString("id-ID", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-          </div>
+          <Clock currentTime={currentTime} />
         </div>
       </div>
 
@@ -193,6 +208,7 @@ const Dashboard = () => {
           gradient="from-blue-500 to-blue-600"
           link="/users"
           delay={100}
+          loading={stats.loading}
         />
         <StatCard
           title="Data KTP"
@@ -201,6 +217,7 @@ const Dashboard = () => {
           gradient="from-purple-500 to-indigo-600"
           link="/ktp"
           delay={200}
+          loading={stats.loading}
         />
         <StatCard
           title="Data SIM"
@@ -209,6 +226,7 @@ const Dashboard = () => {
           gradient="from-orange-500 to-red-500"
           link="/sim"
           delay={300}
+          loading={stats.loading}
         />
       </div>
 

@@ -27,6 +27,9 @@ const CRUDManager = ({
   renderView,
   renderCreateExtra,
   renderEditExtra,
+  renderFormExtra,
+  renderHeader,
+  onDataChange,
   enableCreate = true,
   showViewAction = true,
   showEditAction = true,
@@ -61,6 +64,7 @@ const CRUDManager = ({
     validationRules,
     onDataTransform,
     onBeforeSubmit,
+    onDataChange,
     pageSize,
     sortBy,
     sortOrder,
@@ -152,6 +156,9 @@ const CRUDManager = ({
         actions={headerActions}
       />
 
+      {/* Custom Header (e.g., Map Overview) */}
+      {typeof renderHeader === "function" && renderHeader({ data, loading })}
+
       {/* Data Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden backdrop-blur-sm">
         <DataTable
@@ -180,6 +187,11 @@ const CRUDManager = ({
           {typeof renderCreateExtra === "function" && (
             <div className="mb-4">
               {renderCreateExtra({ formData, setFormData, modals, selectedItem })}
+            </div>
+          )}
+          {typeof renderFormExtra === "function" && (
+            <div className="mb-4">
+              {renderFormExtra({ formData, setFormData, mode: "create" })}
             </div>
           )}
           <FormBuilder
@@ -225,6 +237,11 @@ const CRUDManager = ({
           {typeof renderEditExtra === "function" && (
             <div className="mb-4">
               {renderEditExtra({ formData, setFormData, modals, selectedItem })}
+            </div>
+          )}
+          {typeof renderFormExtra === "function" && (
+            <div className="mb-4">
+              {renderFormExtra({ formData, setFormData, mode: "edit" })}
             </div>
           )}
           <FormBuilder

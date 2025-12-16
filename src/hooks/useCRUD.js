@@ -8,6 +8,7 @@ export const useCRUD = ({
   validationRules = {},
   onDataTransform = (data) => data,
   onBeforeSubmit = (data) => data,
+  onDataChange,
   pageSize = 10,
   sortBy = "created_at",
   sortOrder = "desc",
@@ -344,6 +345,10 @@ export const useCRUD = ({
         const successMsg = response.message || (modals.create ? 'Berhasil menambahkan data' : 'Berhasil memperbarui data');
         toast.success(successMsg);
         await loadData();
+        // Call onDataChange callback if provided
+        if (typeof onDataChange === 'function') {
+          onDataChange();
+        }
       } else {
         // Handling error dari backend
         if (response.errors) {
@@ -426,6 +431,10 @@ export const useCRUD = ({
         closeModal('delete');
         toast.success(response.message || 'Berhasil menghapus data');
         await loadData();
+        // Call onDataChange callback if provided
+        if (typeof onDataChange === 'function') {
+          onDataChange();
+        }
       } else {
         toast.error(response.errors || "Gagal menghapus data");
       }

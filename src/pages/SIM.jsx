@@ -3,6 +3,7 @@ import { simService } from "../services/simService";
 import { pendaftaranService } from "../services/pendaftaranService";
 import { SIM_ENUMS, KTP_ENUMS } from "../constants/enums.jsx";
 import { useState, useEffect } from "react";
+import { API_CONFIG } from "../config/api.js";
 import "../styles/error.css";
 
 const SIM = () => {
@@ -85,16 +86,6 @@ const SIM = () => {
     }
 
     return formData;
-  };
-
-  const toDateInput = (dateStr) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "";
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const da = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${da}`;
   };
 
   const formatDateID = (dateStr) => {
@@ -191,6 +182,45 @@ const SIM = () => {
     return map[key] || "bg-gradient-to-r from-slate-50 to-gray-50 text-slate-700 border-slate-200";
   };
 
+  const dmyToISO = (s) => {
+    if (!s) return null;
+    const str = String(s).trim();
+    const parts = str.split(/[\/-]/);
+    if (parts.length !== 3) return null;
+    const [a, b, c] = parts;
+    if (a.length === 4) return `${a.padStart(4, "0")}-${b.padStart(2, "0")}-${c.padStart(2, "0")}`;
+    if (c.length === 4) return `${c.padStart(4, "0")}-${b.padStart(2, "0")}-${a.padStart(2, "0")}`;
+    return null;
+  };
+
+  const transformSIMList = (items = []) => {
+    return (items || []).map((x) => {
+      const pem = x?.data_pemohon || {};
+      const tanggalTerbit = dmyToISO(x?.tanggal_terbit) || x?.tanggal_terbit || null;
+      const tanggalExpired = dmyToISO(x?.tanggal_expired) || x?.tanggal_expired || null;
+      const tanggalLahir = dmyToISO(pem?.tanggal_lahir) || pem?.tanggal_lahir || null;
+      return {
+        ...x,
+        id: x?.id || x?.sim_id,
+        sim_id: x?.sim_id || x?.id,
+        full_name: x?.full_name ?? pem?.full_name ?? null,
+        nik: x?.nik ?? pem?.nik ?? null,
+        tempat_lahir: x?.tempat_lahir ?? pem?.tempat_lahir ?? null,
+        tanggal_lahir: tanggalLahir,
+        jenis_kelamin: x?.jenis_kelamin ?? pem?.jenis_kelamin ?? null,
+        gol_darah: x?.gol_darah ?? pem?.gol_darah ?? null,
+        pekerjaan: x?.pekerjaan ?? pem?.pekerjaan ?? null,
+        rt: x?.rt ?? x?.alamat_rt ?? pem?.alamat_rt ?? null,
+        rw: x?.rw ?? x?.alamat_rw ?? pem?.alamat_rw ?? null,
+        kecamatan: x?.kecamatan ?? pem?.kecamatan ?? null,
+        kabupaten: x?.kabupaten ?? pem?.kabupaten ?? null,
+        provinsi: x?.provinsi ?? pem?.provinsi ?? null,
+        tanggal_terbit: tanggalTerbit,
+        tanggal_expired: tanggalExpired,
+      };
+    });
+  };
+
   const formatAlamat = (item) => {
     const parts = [];
     if (item.rt || item.rw) parts.push(`RT ${item.rt || '-'}/RW ${item.rw || '-'}`);
@@ -204,12 +234,12 @@ const SIM = () => {
     if (!val) return null;
     if (typeof val === "string") {
       if (val.startsWith("http") || val.startsWith("blob:") || val.startsWith("data:")) return val;
-      return `${import.meta.env.VITE_API_URL || ""}${val}`;
+      return `${(import.meta.env.VITE_API_URL || API_CONFIG.BASE_URL || "").replace(/\/$/, "")}${val.startsWith("/") ? "" : "/"}${val}`;
     }
     if (typeof val === "object" && (val.url || val.preview || val.path)) {
       const imgSrc = val.url || val.preview || val.path;
       if (imgSrc.startsWith("http") || imgSrc.startsWith("blob:") || imgSrc.startsWith("data:")) return imgSrc;
-      return `${import.meta.env.VITE_API_URL || ""}${imgSrc}`;
+      return `${(import.meta.env.VITE_API_URL || API_CONFIG.BASE_URL || "").replace(/\/$/, "")}${imgSrc.startsWith("/") ? "" : "/"}${imgSrc}`;
     }
     return null;
   };
@@ -497,7 +527,11 @@ const SIM = () => {
       render: (value) => (
         <div className="text-sm">
           <div className={`font-medium ${isExpired(value) ? "text-red-600" : "text-gray-700"}`}>
-            {value ? new Date(value).toLocaleDateString("id-ID") : "-"}
+            {value
+              ? (isNaN(new Date(value).getTime())
+                ? "-"
+                : new Date(value).toLocaleDateString("id-ID"))
+              : "-"}
           </div>
           {isExpired(value) && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-gradient-to-r from-red-100 to-orange-100 text-red-700 mt-1">
@@ -518,10 +552,14 @@ const SIM = () => {
     
     // Tanggal expired minimal 1 hari setelah tanggal terbit
     let minTanggalExpired = today;
+    let tanggalTerbitLabel = null;
     if (tanggalTerbit) {
       const terbitDate = new Date(tanggalTerbit);
-      terbitDate.setDate(terbitDate.getDate() + 1); // Minimal 1 hari setelah terbit
-      minTanggalExpired = terbitDate.toISOString().split('T')[0];
+      if (!isNaN(terbitDate.getTime())) {
+        tanggalTerbitLabel = terbitDate.toLocaleDateString('id-ID');
+        terbitDate.setDate(terbitDate.getDate() + 1); // Minimal 1 hari setelah terbit
+        minTanggalExpired = terbitDate.toISOString().split('T')[0];
+      }
     }
 
     return [
@@ -558,8 +596,8 @@ const SIM = () => {
         required: true,
         icon: "⏰",
         min: minTanggalExpired, 
-        helpText: tanggalTerbit 
-          ? `Minimal 1 hari setelah tanggal terbit (${new Date(tanggalTerbit).toLocaleDateString('id-ID')})` 
+        helpText: tanggalTerbitLabel 
+          ? `Minimal 1 hari setelah tanggal terbit (${tanggalTerbitLabel})` 
           : "Pilih tanggal terbit terlebih dahulu",
       },
       {
@@ -584,7 +622,7 @@ const SIM = () => {
       required: (_, isCreate) => isCreate,
       label: "Tanggal Terbit",
       custom: (value) => {
-        if (!value) return true; // Will be caught by required
+        if (!value) return null; // Will be caught by required
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const terbitDate = new Date(value);
@@ -593,19 +631,19 @@ const SIM = () => {
         if (terbitDate < today) {
           return "Tanggal terbit tidak boleh di masa lalu";
         }
-        return true;
+        return null;
       }
     },
     tanggal_expired: {
       required: true,
       label: "Tanggal Expired",
       custom: (value, formData) => {
-        if (!value) return true; // Will be caught by required
+        if (!value) return null; // Will be caught by required
         
         const expiredDate = new Date(value);
         const terbitDate = formData?.tanggal_terbit ? new Date(formData.tanggal_terbit) : null;
         
-        if (terbitDate) {
+        if (terbitDate && !isNaN(terbitDate.getTime())) {
           // Tanggal expired harus lebih dari tanggal terbit
           if (expiredDate <= terbitDate) {
             return "Tanggal expired harus lebih dari tanggal terbit";
@@ -620,7 +658,7 @@ const SIM = () => {
           }
         }
         
-        return true;
+        return null;
       }
     },
     picture: {
@@ -682,7 +720,7 @@ const SIM = () => {
          <div className="p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center mb-6">
            <span className="text-4xl block mb-2">📝</span>
            <p className="text-gray-500 font-medium">Silakan pilih Pendaftaran SIM terlebih dahulu</p>
-           <p className="text-xs text-gray-400 mt-1">Hanya pendaftaran dengan status "Disetujui" yang dapat diproses</p>
+           <p className="text-xs text-gray-400 mt-1">Hanya pendaftaran dengan status "selesai" yang dapat diproses</p>
          </div>
       );
     }
@@ -762,6 +800,7 @@ const SIM = () => {
         formFields={formFields}
         initialFormData={initialFormData}
         validationRules={validationRules}
+        onDataTransform={transformSIMList}
         searchPlaceholder="Cari nomor SIM, nama, atau NIK..."
         filterOptions={filterOptions}
         icon="🚗"

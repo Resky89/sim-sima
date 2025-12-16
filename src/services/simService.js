@@ -10,8 +10,23 @@ export const simService = {
       sort_order: 'desc',
       ...params
     };
-    
-    return await httpClient.get(API_CONFIG.ENDPOINTS.SIM.BASE, queryParams);
+    const resp = await httpClient.get(API_CONFIG.ENDPOINTS.SIM.BASE, queryParams);
+    // Normalize response to a common shape expected by useCRUD
+    if (resp && typeof resp === 'object') {
+      const success = resp.success !== undefined ? resp.success : true;
+      const items = Array.isArray(resp.data)
+        ? resp.data
+        : Array.isArray(resp?.data?.items)
+          ? resp.data.items
+          : Array.isArray(resp?.items)
+            ? resp.items
+            : Array.isArray(resp?.data?.data)
+              ? resp.data.data
+              : [];
+      const pagination = resp.pagination || resp?.data?.pagination || resp?.meta || {};
+      return { ...resp, success, data: items, pagination };
+    }
+    return resp;
   },
 
   async getSIMById(simId) {
@@ -23,7 +38,8 @@ export const simService = {
   },
 
   async update(simId, simData) {
-    return await httpClient.put(API_CONFIG.ENDPOINTS.SIM.BY_ID(simId), simData);
+    // API uses PATCH for SIM update per Postman collection
+    return await httpClient.patch(API_CONFIG.ENDPOINTS.SIM.BY_ID(simId), simData);
   },
 
   async delete(simId) {

@@ -47,6 +47,24 @@ export const useCRUD = ({
     sort_order: sortOrder,
   });
 
+  const getItemId = (item) => {
+    if (!item) return null;
+    return (
+      item.id ??
+      item.user_id ??
+      item.admin_id ??
+      item.id_admin ??
+      item.userId ??
+      item.id_user ??
+      item.uuid ??
+      item.ktp_id ??
+      item.sim_id ??
+      item.satpas_id ??
+      item.pendaftaran_id ??
+      null
+    );
+  };
+
   // Load data function
   const loadData = async (params = searchParams) => {
     try {
@@ -164,7 +182,12 @@ export const useCRUD = ({
           }
         }
       });
-      
+
+      const unifiedId = getItemId(formattedItem);
+      if (unifiedId && !formattedItem.id) {
+        formattedItem.id = unifiedId;
+      }
+
       setFormData({ ...initialFormData, ...formattedItem });
     } else {
       resetForm();
@@ -262,66 +285,57 @@ export const useCRUD = ({
       // Beri kesempatan parent untuk memproses/menormalisasi data sebelum submit (mis. ubah File -> path)
       const processedForm = typeof onBeforeSubmit === 'function' ? onBeforeSubmit(formData, { isCreate: modals.create, selectedItem }) : formData;
 
-      const hasFileInput = Object.values(processedForm).some(
-        value => value instanceof File || 
-                (typeof value === 'object' && value !== null && 
-                 (value.type?.includes('image/') || value.name?.match(/\.(jpg|jpeg|png|gif|svg)$/i)))
-      );
-
       let dataToSend;
-      if (hasFileInput) {
-        // Gunakan FormData untuk mengirim file
-        dataToSend = new FormData();
-        
-        // Tambahkan semua field ke FormData
-        Object.keys(processedForm).forEach(key => {
-          const value = processedForm[key];
-          
-          // Skip empty values
-          if (value === "" || value === null || value === undefined) {
-            return;
-          }
-          
-          // Jika nilai adalah File, tambahkan langsung
-          if (value instanceof File) {
-            dataToSend.append(key, value);
-          } 
-          // Jika nilai adalah object dengan property yang menunjukkan file
-          else if (typeof value === 'object' && value !== null && !Array.isArray(value) && 
-                  (value.type?.includes('image/') || value.name?.match(/\.(jpg|jpeg|png|gif|svg)$/i))) {
-            // Jika object memiliki property 'file' yang berisi File object
-            if (value.file instanceof File) {
-              dataToSend.append(key, value.file);
-            } else {
-              // Jika tidak ada file, kirim sebagai JSON string
-              dataToSend.append(key, JSON.stringify(value));
-            }
-          } 
-          // Untuk array atau object lainnya, konversi ke JSON string
-          else if (typeof value === 'object' && value !== null) {
-            dataToSend.append(key, JSON.stringify(value));
-          } 
-          // Untuk nilai primitif, tambahkan langsung
-          else {
-            dataToSend.append(key, value);
-          }
-        });
+      if (processedForm instanceof FormData) {
+        dataToSend = processedForm;
       } else {
-        // Gunakan object biasa jika tidak ada file
-        dataToSend = {};
-        Object.keys(processedForm).forEach(key => {
-          // Include field only if it has a value (not empty string, null, or undefined)
-          if (processedForm[key] !== "" && processedForm[key] !== null && processedForm[key] !== undefined) {
-            dataToSend[key] = processedForm[key];
-          }
-        });
+        const hasFileInput = Object.values(processedForm).some(
+          value => value instanceof File || 
+                  (typeof value === 'object' && value !== null && 
+                   (value.type?.includes('image/') || value.name?.match(/\.(jpg|jpeg|png|gif|svg)$/i)))
+        );
+
+        if (hasFileInput) {
+          dataToSend = new FormData();
+          Object.keys(processedForm).forEach(key => {
+            const value = processedForm[key];
+            if (value === "" || value === null || value === undefined) {
+              return;
+            }
+            if (value instanceof File) {
+              dataToSend.append(key, value);
+            } else if (typeof value === 'object' && value !== null && !Array.isArray(value) && 
+                      (value.type?.includes('image/') || value.name?.match(/\.(jpg|jpeg|png|gif|svg)$/i))) {
+              if (value.file instanceof File) {
+                dataToSend.append(key, value.file);
+              } else {
+                dataToSend.append(key, JSON.stringify(value));
+              }
+            } else if (typeof value === 'object' && value !== null) {
+              dataToSend.append(key, JSON.stringify(value));
+            } else {
+              dataToSend.append(key, value);
+            }
+          });
+        } else {
+          dataToSend = {};
+          Object.keys(processedForm).forEach(key => {
+            if (processedForm[key] !== "" && processedForm[key] !== null && processedForm[key] !== undefined) {
+              dataToSend[key] = processedForm[key];
+            }
+          });
+        }
       }
 
       let response;
       if (modals.create) {
         response = await service.create(dataToSend);
       } else {
-        const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id || selectedItem.satpas_id || selectedItem.pendaftaran_id;
+        const itemId = getItemId(selectedItem);
+        if (!itemId) {
+          toast.error("ID data tidak ditemukan");
+          return;
+        }
         response = await service.update(itemId, dataToSend);
       }
 
@@ -401,7 +415,11 @@ export const useCRUD = ({
       setSubmitting(true);
       setError("");
 
-      const itemId = selectedItem.id || selectedItem.user_id || selectedItem.ktp_id || selectedItem.sim_id || selectedItem.satpas_id || selectedItem.pendaftaran_id;
+      const itemId = getItemId(selectedItem);
+      if (!itemId) {
+        toast.error("ID data tidak ditemukan");
+        return;
+      }
       const response = await service.delete(itemId);
 
       if (response.success) {

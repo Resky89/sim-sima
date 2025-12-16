@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Input from "../ui/Input";
 import Select from "../ui/Select";
 import Button from "../ui/Button";
@@ -19,6 +19,8 @@ const FormBuilder = ({
   const [formData, setFormData] = useState(data);
   const [fieldErrors, setFieldErrors] = useState(errors);
   const [touched, setTouched] = useState({});
+  const objectUrlCacheRef = useRef(new WeakMap());
+  const createdObjectUrlsRef = useRef(new Set());
 
   useEffect(() => {
     setFormData(data);
@@ -27,6 +29,13 @@ const FormBuilder = ({
   useEffect(() => {
     setFieldErrors(errors);
   }, [errors]);
+
+  useEffect(() => {
+    return () => {
+      createdObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      createdObjectUrlsRef.current.clear();
+    };
+  }, []);
 
   const handleFieldChange = (fieldName, value) => {
     const newData = { ...formData, [fieldName]: value };
@@ -250,27 +259,33 @@ const FormBuilder = ({
                   field.renderPreview(fieldValue)
                 ) : fieldValue ? (
                   <div className="mt-2 mb-4 border rounded-lg overflow-hidden w-full max-w-xs mx-auto">
-                    {fieldValue instanceof File ? (
-                      <img 
-                        src={URL.createObjectURL(fieldValue)}
-                        alt={`${label} Preview`} 
-                        className="w-full h-auto object-contain"
-                      />
-                    ) : typeof fieldValue === 'object' && (fieldValue.path || fieldValue.url || fieldValue.preview) ? (
-                      <img 
-                        src={fieldValue.url || fieldValue.preview || fieldValue.path}
-                        alt={`${label}`} 
-                        className="w-full h-auto object-contain"
-                      />
-                    ) : typeof fieldValue === 'string' ? (
-                      <img 
-                        src={fieldValue.startsWith('http') || fieldValue.startsWith('blob:') || fieldValue.startsWith('data:') 
-                          ? fieldValue 
-                          : `${import.meta.env.VITE_API_URL || ''}${fieldValue}`}
-                        alt={`${label}`} 
-                        className="w-full h-auto object-contain"
-                      />
-                    ) : null}
+                    {(() => {
+                      let src = null;
+                      if (fieldValue instanceof File) {
+                        const cached = objectUrlCacheRef.current.get(fieldValue);
+                        if (cached) {
+                          src = cached;
+                        } else {
+                          const url = URL.createObjectURL(fieldValue);
+                          objectUrlCacheRef.current.set(fieldValue, url);
+                          createdObjectUrlsRef.current.add(url);
+                          src = url;
+                        }
+                      } else if (typeof fieldValue === 'object' && (fieldValue.path || fieldValue.url || fieldValue.preview)) {
+                        src = fieldValue.url || fieldValue.preview || fieldValue.path;
+                      } else if (typeof fieldValue === 'string') {
+                        src = fieldValue.startsWith('http') || fieldValue.startsWith('blob:') || fieldValue.startsWith('data:')
+                          ? fieldValue
+                          : `${import.meta.env.VITE_API_URL || ''}${fieldValue}`;
+                      }
+                      return src ? (
+                        <img
+                          src={src}
+                          alt={`${label}`}
+                          className="w-full h-auto object-contain"
+                        />
+                      ) : null;
+                    })()}
                   </div>
                 ) : (
                   <svg

@@ -10,32 +10,38 @@ const SIM = () => {
   const [errorMessage, setErrorMessage] = useState(null);
   const [pendaftaranOptions, setPendaftaranOptions] = useState([]);
 
-  const beforeSubmitSIM = (data) => {
-    console.log('beforeSubmitSIM - Original data:', data);
+  const beforeSubmitSIM = (data, { isCreate, selectedItem }) => {
+    console.log('beforeSubmitSIM - isCreate:', isCreate, 'Original data:', data);
+    
+    const isEdit = !isCreate;
     
     // Validasi field wajib
     const errors = [];
     
-    if (!data.pendaftaran_id) {
-      errors.push('Pendaftaran ID harus dipilih');
+    // Validasi untuk mode CREATE
+    if (!isEdit) {
+      if (!data.pendaftaran_id) {
+        errors.push('Pendaftaran ID harus dipilih');
+      }
+      
+      if (!data.tanggal_terbit) {
+        errors.push('Tanggal terbit harus diisi');
+      }
+      
+      // Validasi picture dengan berbagai format yang mungkin
+      const hasPicture = 
+        (data.picture instanceof File) ||
+        (data.picture instanceof FileList && data.picture.length > 0) ||
+        (data.picture && typeof data.picture === 'object' && data.picture.file instanceof File);
+      
+      if (!hasPicture) {
+        errors.push('Foto SIM harus dilampirkan');
+      }
     }
     
-    if (!data.tanggal_terbit) {
-      errors.push('Tanggal terbit harus diisi');
-    }
-    
+    // Validasi tanggal_expired untuk semua mode
     if (!data.tanggal_expired) {
       errors.push('Tanggal expired harus diisi');
-    }
-    
-    // Validasi picture dengan berbagai format yang mungkin
-    const hasPicture = 
-      (data.picture instanceof File) ||
-      (data.picture instanceof FileList && data.picture.length > 0) ||
-      (data.picture && typeof data.picture === 'object' && data.picture.file instanceof File);
-    
-    if (!hasPicture) {
-      errors.push('Foto SIM harus dilampirkan');
     }
     
     // Jika ada error, throw error untuk ditangani oleh CRUDManager
@@ -45,34 +51,53 @@ const SIM = () => {
       throw new Error(errorMsg);
     }
     
-    // Siapkan FormData sesuai permintaan Postman
+    // Siapkan FormData
     const formData = new FormData();
     
-    // Wajib: pendaftaran_id
-    formData.append("pendaftaran_id", data.pendaftaran_id);
-    console.log('Added pendaftaran_id:', data.pendaftaran_id);
-    
-    // Wajib: tanggal_terbit (YYYY-MM-DD)
-    formData.append("tanggal_terbit", data.tanggal_terbit);
-    console.log('Added tanggal_terbit:', data.tanggal_terbit);
-    
-    // Wajib: tanggal_expired (YYYY-MM-DD)
-    formData.append("tanggal_expired", data.tanggal_expired);
-    console.log('Added tanggal_expired:', data.tanggal_expired);
-    
-    // Wajib: picture (File)
-    let pictureFile = null;
-    if (data.picture instanceof File) {
-      pictureFile = data.picture;
-    } else if (data.picture instanceof FileList && data.picture.length > 0) {
-      pictureFile = data.picture[0];
-    } else if (data.picture && typeof data.picture === 'object' && data.picture.file instanceof File) {
-      pictureFile = data.picture.file;
-    }
-    
-    if (pictureFile) {
-      formData.append("picture", pictureFile);
-      console.log('Added picture:', pictureFile.name, 'Size:', pictureFile.size, 'bytes');
+    if (isEdit) {
+      // Mode EDIT: hanya kirim tanggal_expired dan picture (opsional)
+      formData.append("tanggal_expired", data.tanggal_expired);
+      console.log('Added tanggal_expired:', data.tanggal_expired);
+      
+      // Picture opsional untuk edit
+      let pictureFile = null;
+      if (data.picture instanceof File) {
+        pictureFile = data.picture;
+      } else if (data.picture instanceof FileList && data.picture.length > 0) {
+        pictureFile = data.picture[0];
+      } else if (data.picture && typeof data.picture === 'object' && data.picture.file instanceof File) {
+        pictureFile = data.picture.file;
+      }
+      
+      if (pictureFile) {
+        formData.append("picture", pictureFile);
+        console.log('Added picture:', pictureFile.name, 'Size:', pictureFile.size, 'bytes');
+      }
+    } else {
+      // Mode CREATE: kirim semua field
+      formData.append("pendaftaran_id", data.pendaftaran_id);
+      console.log('Added pendaftaran_id:', data.pendaftaran_id);
+      
+      formData.append("tanggal_terbit", data.tanggal_terbit);
+      console.log('Added tanggal_terbit:', data.tanggal_terbit);
+      
+      formData.append("tanggal_expired", data.tanggal_expired);
+      console.log('Added tanggal_expired:', data.tanggal_expired);
+      
+      // Picture wajib untuk create
+      let pictureFile = null;
+      if (data.picture instanceof File) {
+        pictureFile = data.picture;
+      } else if (data.picture instanceof FileList && data.picture.length > 0) {
+        pictureFile = data.picture[0];
+      } else if (data.picture && typeof data.picture === 'object' && data.picture.file instanceof File) {
+        pictureFile = data.picture.file;
+      }
+      
+      if (pictureFile) {
+        formData.append("picture", pictureFile);
+        console.log('Added picture:', pictureFile.name, 'Size:', pictureFile.size, 'bytes');
+      }
     }
     
     // Log semua entries dalam FormData untuk debugging
@@ -467,8 +492,9 @@ const SIM = () => {
   useEffect(() => {
     const loadPendaftaran = async () => {
       try {
-        // API SIM Create memerlukan pendaftaran dengan status 'disetujui' (approved)
-        const res = await pendaftaranService.getList({ status: 'disetujui' });
+        // API SIM Create memerlukan pendaftaran dengan status 'selesai'
+        // Menggunakan parameter status_pendaftaran sesuai API backend
+        const res = await pendaftaranService.getList({ status_pendaftaran: 'selesai' });
         const items = res?.data || [];
         const options = items.map((it) => ({
           value: it.id || it.pendaftaran_id,
@@ -546,6 +572,7 @@ const SIM = () => {
 
   const formFields = ({ formData, mode }) => {
     const isCreate = mode === "create";
+    const isEdit = mode === "edit";
     
     // Untuk validasi tanggal
     const today = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
@@ -563,16 +590,61 @@ const SIM = () => {
       }
     }
 
+    // Mode Edit: Hanya tampilkan tanggal_expired dan picture
+    if (isEdit) {
+      return [
+        {
+          name: "nomor_sim",
+          label: "Nomor SIM",
+          type: "text",
+          disabled: true,
+          icon: "🆔",
+        },
+        {
+          name: "jenis_sim",
+          label: "Jenis SIM",
+          type: "text",
+          disabled: true,
+          icon: "📋",
+        },
+        {
+          name: "tanggal_terbit",
+          label: "Tanggal Terbit",
+          type: "date",
+          disabled: true,
+          icon: "📅",
+          helpText: "Tanggal terbit tidak dapat diubah",
+        },
+        {
+          name: "tanggal_expired",
+          label: "Tanggal Expired",
+          type: "date",
+          required: true,
+          icon: "⏰",
+          min: minTanggalExpired,
+          helpText: "Anda dapat mengubah tanggal expired SIM",
+        },
+        {
+          name: "picture",
+          label: "Foto SIM (Opsional)",
+          type: "file",
+          required: false,
+          accept: "image/*",
+          icon: "📷",
+          helpText: "Upload foto baru jika ingin mengubah foto SIM",
+        },
+      ];
+    }
+
+    // Mode Create: Tampilkan semua field
     return [
       {
         name: "pendaftaran_id",
-        label: "Pendaftaran (Disetujui)",
+        label: "Pendaftaran (Selesai)",
         type: "select",
-        required: isCreate,
+        required: true,
         options: pendaftaranOptions,
-        disabled: !isCreate,
         icon: "📝",
-        className: !isCreate ? "hidden" : "",
       },
       {
         name: "jenis_sim",
@@ -585,7 +657,7 @@ const SIM = () => {
         name: "tanggal_terbit",
         label: "Tanggal Terbit",
         type: "date",
-        required: isCreate,
+        required: true,
         icon: "📅",
         min: today, 
         helpText: "Tanggal terbit tidak boleh di masa lalu",
@@ -605,7 +677,7 @@ const SIM = () => {
         name: "picture",
         label: "Foto SIM",
         type: "file",
-        required: isCreate,
+        required: true,
         accept: "image/*",
         icon: "📷",
       },

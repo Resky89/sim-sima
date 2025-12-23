@@ -2,7 +2,7 @@ import { httpClient } from './httpClient.js';
 import { API_CONFIG } from '../config/api.js';
 
 // API endpoint untuk KTP
-const KTP_API_BASE_URL = 'https://ktp.chasouluix.biz.id/api/ktp';
+const KTP_API_BASE_URL = API_CONFIG.KTP_BASE_URL || 'https://ktp.chasouluix.biz.id/api/ktp';
 
 export const ktpService = {
   async getKTPs(params = {}) {
@@ -61,6 +61,22 @@ export const ktpService = {
       return await response.json();
     } catch (error) {
       console.error(`Error fetching KTP data for NIK ${nik}:`, error);
+      throw error;
+    }
+  },
+
+  async getPhotoByNIK(nik) {
+    try {
+      if (!nik) {
+        throw new Error('NIK tidak boleh kosong');
+      }
+      const response = await fetch(`${KTP_API_BASE_URL}/photo/nik/${nik}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      }
+      return await response.blob();
+    } catch (error) {
+      console.error(`Error fetching KTP photo for NIK ${nik}:`, error);
       throw error;
     }
   }

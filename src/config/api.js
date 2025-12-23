@@ -1,6 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: 'http://localhost:8026',
+  KTP_BASE_URL: 'https://ktp.chasouluix.biz.id/api/ktp',
   ENDPOINTS: {
     AUTH: {
       LOGIN: '/api/auth/admin/login',

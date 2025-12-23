@@ -46,4 +46,11 @@ export const pendaftaranService = {
       ? resp
       : { success: true, ...resp };
   },
+
+  async updateStatus(id, status) {
+    const resp = await httpClient.patch(API_CONFIG.ENDPOINTS.PENDAFTARAN.STATUS(id), { status });
+    return (resp && typeof resp === 'object' && Object.prototype.hasOwnProperty.call(resp, 'success'))
+      ? resp
+      : { success: true, ...resp };
+  },
 };

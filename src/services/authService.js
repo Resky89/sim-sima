@@ -11,12 +11,14 @@ export const authService = {
     });
 
     if (response.success) {
-      const { tokens, user } = response.data;
+      const resData = response?.data || {};
+      const tokens = resData?.tokens || resData?.data?.tokens || {};
+      const user = resData?.user || resData?.admin || resData?.data?.user || resData?.data?.admin || null;
       store.dispatch(
         setCredentials({
           user,
-          accessToken: tokens.access_token,
-          csrfToken: tokens.csrf_token,
+          accessToken: tokens?.access_token || tokens?.accessToken || null,
+          csrfToken: tokens?.csrf_token || tokens?.csrfToken || null,
         })
       );
       return response;
@@ -40,10 +42,11 @@ export const authService = {
     const response = await httpClient.get(API_CONFIG.ENDPOINTS.AUTH.ME);
 
     if (response.success) {
-      // We have a valid session, update the user profile data in the store
+      const resData = response?.data || {};
+      const profile = resData?.user || resData?.admin || resData;
       const currentState = store.getState().auth;
-      store.dispatch(setCredentials({ ...currentState, user: response.data }));
-      return response.data;
+      store.dispatch(setCredentials({ ...currentState, user: profile }));
+      return profile;
     }
 
     throw new Error(response.errors || 'Failed to get profile');

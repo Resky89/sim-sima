@@ -88,10 +88,10 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                SIMA
+                Sim Management
               </h1>
               <p className="text-xs text-gray-500 font-medium">
-                Sistem Informasi Manusia
+                Admin Panel
               </p>
             </div>
           </div>

@@ -79,7 +79,7 @@ const Login = () => {
               Selamat Datang
             </h2>
             <p className="mt-3 text-gray-500">
-              Masuk ke <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SIMA</span> - Sistem Informasi Manusia
+              Masuk ke <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Sim Management</span>
             </p>
           </div>
 
@@ -250,7 +250,7 @@ const Login = () => {
           </div>
 
           <h1 className="text-4xl font-extrabold mb-4 leading-tight">
-            Sistem Informasi<br/>Manusia
+            Sim Management
           </h1>
           <p className="text-xl text-blue-100 mb-10 leading-relaxed">
             Kelola data pengguna, KTP, dan SIM dengan mudah, cepat, dan aman

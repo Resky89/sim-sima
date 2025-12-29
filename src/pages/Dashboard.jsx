@@ -191,7 +191,7 @@ const Dashboard = () => {
               </h1>
             </div>
             <p className="text-blue-100 text-lg">
-              Selamat datang kembali di <span className="font-semibold">SIMA</span> - Sistem Informasi Manusia
+              Selamat datang kembali di <span className="font-semibold">Sim Management</span>
             </p>
           </div>
           
@@ -288,8 +288,8 @@ const Dashboard = () => {
               <span className="text-xl text-white font-bold">S</span>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">SIMA v1.0</h3>
-              <p className="text-sm text-gray-500">Sistem Informasi Manusia - Admin Panel</p>
+              <h3 className="font-semibold text-gray-900">Sim Management v1.0</h3>
+              <p className="text-sm text-gray-500">Sim Management - Admin Panel</p>
             </div>
           </div>
           
@@ -299,7 +299,7 @@ const Dashboard = () => {
               <span className="text-sm text-gray-600">Sistem Online</span>
             </div>
             <div className="text-sm text-gray-400">
-              © 2024 SIMA
+              © 2024 Sim Management
             </div>
           </div>
         </div>
